@@ -153,7 +153,6 @@ output_layers = compiled_model_p.outputs
 height_p, width_p = list(input_layer.shape)[2:]
 print(input_layer.shape)
 
-
 # In[10]:
 
 
