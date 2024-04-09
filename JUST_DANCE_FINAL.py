@@ -26,9 +26,6 @@ import openvino as ov
 from numpy.lib.stride_tricks import as_strided
 from decoder import OpenPoseDecoder
 
-from IPython.display import display, Javascript
-
-
 # In[4]:
 
 
@@ -118,19 +115,6 @@ class Model:
         return result
 
 
-# In[8]:
-
-
-import ipywidgets as widgets
-
-device = widgets.Dropdown(
-    options=core.available_devices + ["AUTO"],
-    value='AUTO',
-    description='Device:',
-    disabled=False,
-)
-
-device
 
 
 # In[9]:
@@ -141,7 +125,7 @@ device
 # Read the network from a file.
 model = core.read_model(model_path)
 # Let the AUTO device decide where to load the model (you can use CPU, GPU as well).
-compiled_model_p = core.compile_model(model=model, device_name=device.value, config={"PERFORMANCE_HINT": "LATENCY"})
+compiled_model_p = core.compile_model(model=model, device_name="CPU", config={"PERFORMANCE_HINT": "LATENCY"})
 
 # Get the input and output names of nodes.
 input_layer = compiled_model_p.input(0)
@@ -156,9 +140,9 @@ print(input_layer.shape)
 # In[10]:
 
 
-detector = Model(detection_model_path, device=device.value)
+detector = Model(detection_model_path, device="CPU")
 # since the number of detection object is uncertain, the input batch size of reid model should be dynamic
-extractor = Model(reidentification_model_path, -1, device.value)
+extractor = Model(reidentification_model_path, -1, "CPU")
 
 
 # In[ ]:
@@ -442,14 +426,6 @@ def draw_poses(img, poses, point_score_threshold, skeleton=default_skeleton):
     cv2.addWeighted(img, 0.9, img_limbs, 0.1, 0, dst=img)
     
     return img, angle_list
-
-
-def show_popup_message(message):
-    javascript_code = f"""
-        alert("{message}");
-    """
-    display(Javascript(javascript_code))
-
 
 
 # In[23]:
