@@ -1,63 +1,36 @@
-import sys
-from PyQt5.QtWidgets import *
-from PyQt5 import uic
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
-
-
+import multiprocessing
+from functools import partial
 import os
+import sys
+# import psutil
 import time
 import subprocess
 
+import ui
+import test
 
-main_window = uic.loadUiType('./Just_dance.ui')[0]
-
-class Main_UI(QWidget, main_window):
+class Main():
     def __init__(self):
-        super().__init__()
-        self.setupUi(self)
+        self.message_que = multiprocessing.Queue()
+        self.Main_process()
         
-        self.txt_title.setHidden(True)
-        self.txt_menu.setHidden(True)
-        self.txt_info.setHidden(True)
-        self.edit_option.setHidden(True)
+    def Main_process(self):
+        ui_p = multiprocessing.Process(target = self.UI_Load, args = (self.message_que, ))
+        dance_p = multiprocessing.Process(target = self.Just_Dance, args = (self.message_que, ))
         
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.ui_change)
-        self.timer.setSingleShot(True)
-        self.timer.start(3000)
+        ui_p.start()
+        dance_p.start()
         
-        self.edit_option.returnPressed.connect(self.option_select)
+        ui_p.join()
+        dance_p.join()
         
-    def ui_change(self):
-        self.txt_welcome.setHidden(True)
-        self.txt_title.setHidden(False)
+    def UI_Load(self, queue):
+        ui.UI_Start()
         
-        temp_tim = QTimer(self)
-        temp_tim.timeout.connect(self.ui_change2)
-        temp_tim.setSingleShot(True)
-        temp_tim.start(500)
-        
-    def ui_change2(self):
-        self.txt_menu.setHidden(False)
-        self.txt_info.setHidden(False)
-        self.edit_option.setHidden(False)
-        
-    def option_select(self):
-        option = self.edit_option.text()
-        print(option)
-        
-        self.edit_option.setText("")
-        
-        if option == "춤":
-            subprocess.run(["python", "JUST_DANCE_FINAL.py"])
-        
-        
-        
+    def Just_Dance(self, queue):
+        flag = queue.get()
+        test.Main().printer(flag)
+    
 
-
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    mainWindow = Main_UI()
-    mainWindow.show()
-    sys.exit(app.exec_())
+if __name__ == "__main__":
+    Main()

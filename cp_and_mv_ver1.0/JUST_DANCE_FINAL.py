@@ -679,9 +679,6 @@ def run_pose_estimation(source=0, flip=False, use_popup=False, skip_first_frames
             cv2.destroyAllWindows()
 
 
-# In[24]:
-
-
 # video_file='./data/m.mp4'
 # source = video_file
 # additional_options = {"skip_first_frames": 500}
@@ -693,16 +690,4 @@ source = cam_id if USE_WEBCAM else video_file
 
 additional_options = {"skip_first_frames": 500} if not USE_WEBCAM else {}
 run_pose_estimation(source=source, flip=False, use_popup=True,**additional_options)
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
 
