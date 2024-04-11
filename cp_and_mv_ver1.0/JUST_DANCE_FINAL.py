@@ -16,7 +16,6 @@ import os
 import numpy as np
 import cv2
 # from IPython import display
-import matplotlib.pyplot as plt
 import openvino as ov
 
 
@@ -143,18 +142,6 @@ print(input_layer.shape)
 detector = Model(detection_model_path, device="CPU")
 # since the number of detection object is uncertain, the input batch size of reid model should be dynamic
 extractor = Model(reidentification_model_path, -1, "CPU")
-
-
-# In[ ]:
-
-
-
-
-
-# In[11]:
-
-
-input_layer.any_name, [o.any_name for o in output_layers]
 
 
 # In[12]:

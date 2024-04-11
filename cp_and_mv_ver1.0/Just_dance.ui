@@ -83,7 +83,7 @@
    <property name="geometry">
     <rect>
      <x>60</x>
-     <y>450</y>
+     <y>400</y>
      <width>511</width>
      <height>61</height>
     </rect>
@@ -98,6 +98,16 @@
    </property>
    <property name="alignment">
     <set>Qt::AlignCenter</set>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="edit_option">
+   <property name="geometry">
+    <rect>
+     <x>50</x>
+     <y>470</y>
+     <width>511</width>
+     <height>81</height>
+    </rect>
    </property>
   </widget>
  </widget>
