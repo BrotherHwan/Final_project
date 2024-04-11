@@ -427,8 +427,8 @@ def run_pose_estimation(source=0, flip=False, use_popup=False, skip_first_frames
     score_list=[]
     try:
         # Create a video player to play with target fps.
-        player = utils.VideoPlayer(source,size=(700, 450), flip=flip, fps=24)
-        player1 = utils.VideoPlayer(source, size=(700, 450), flip=flip, fps=24)
+        player = utils.VideoPlayer(source,size=(700, 450), flip=flip, fps=30)
+        player1 = utils.VideoPlayer(source, size=(700, 450), flip=flip, fps=30)
         # Start capturing.
         player.start()
         player1.start()
