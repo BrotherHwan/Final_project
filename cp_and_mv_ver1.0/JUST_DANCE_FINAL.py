@@ -15,7 +15,7 @@ import os
 
 import numpy as np
 import cv2
-from IPython import display
+# from IPython import display
 import matplotlib.pyplot as plt
 import openvino as ov
 
@@ -517,8 +517,6 @@ def run_pose_estimation(source=0, flip=False, use_popup=False, skip_first_frames
             bbox_xywh1, score1, _ = process_results(h, w, results=output1)
             
             
-
-            
             if len(bbox_xywh):
                 x1, y1, x2, y2 = xywh_to_xyxy(bbox_xywh[0], h, w)
                 width = (x2+x1)
@@ -650,21 +648,19 @@ def run_pose_estimation(source=0, flip=False, use_popup=False, skip_first_frames
                 
                 stacked_array = np.vstack((frame, frame1))
                 
-                
                 cv2.imshow(title, stacked_array)
-                key = cv2.waitKey(1)
-                
-                
 
                 # traking_image = np.vstack((traking_image, traking_image1))
                 
                 cv2.imshow(title1, traking_image)
-                key = cv2.waitKey(1)
-                
-                
+                key = cv2.waitKey(1)                
                 
                 # escape = 27
-                if key == 27:
+                if (cv2.getWindowProperty(title1, cv2.WND_PROP_VISIBLE ) <1) or (cv2.getWindowProperty(title, cv2.WND_PROP_VISIBLE ) <1) or (key == 27):
+                    print("Window Closed")
+                    player.stop()
+                    player1.stop()
+                    cv2.destroyAllWindows()
                     break
             else:
                 # Encode numpy array to jpg.
@@ -693,7 +689,6 @@ def run_pose_estimation(source=0, flip=False, use_popup=False, skip_first_frames
                         # cv2.putText(frame1, f"score : {int(score)}", (600, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
             time.sleep(5)
         if use_popup:
-            
             cv2.destroyAllWindows()
 
 
