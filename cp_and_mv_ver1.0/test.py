@@ -2,9 +2,8 @@ class Main():
     def __init__(self):
         pass
     
-    def printer(self, flag):
-        if flag == "춤":
-            print("hellow world")
+    def printer(self):
+        print("hello world")
         
 
 if __name__ == "__main__":
