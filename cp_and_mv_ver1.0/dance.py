@@ -613,6 +613,7 @@ class Just_Dance():
 # additional_options = {"skip_first_frames": 500}
 # run_person_tracking_pose_est(source=source,source1=0, flip=False, use_popup=True,**additional_options)
 
+
 if __name__ == "__main__":
     USE_WEBCAM = False
     cam_id = 0
@@ -621,16 +622,4 @@ if __name__ == "__main__":
 
     additional_options = {"skip_first_frames": 500} if not USE_WEBCAM else {}
     Just_Dance().run_pose_estimation(source=source, flip=False, use_popup=True,**additional_options)
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
 

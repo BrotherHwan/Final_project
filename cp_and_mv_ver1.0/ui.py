@@ -52,7 +52,7 @@ class Main_UI(QWidget, main_window):
     def option_select(self, msg_queue):
         self.option = self.edit_option.text()
         # print(self.option)
-        msg_queue.put({"flag":self.option})
+        # msg_queue.put({"flag":self.option})
         self.edit_option.setText("")
         
         if self.option == "춤":

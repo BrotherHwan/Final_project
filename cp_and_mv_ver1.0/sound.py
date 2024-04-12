@@ -4,7 +4,7 @@ from time import time
 
 
 class sound_reco():
-    def __init__(self):
+    def __init__(self, queue):
         # Initialize whisper
         self.model = whisper.load_model("medium") # tiny/base/small/medium/large
         #model = whisper.load_model("base", "cpu") # tiny/base/small/medium/large
@@ -16,7 +16,7 @@ class sound_reco():
             # listen for 1 second and create the ambient noise energy level
             self.recognizer.adjust_for_ambient_noise(source, duration=1)
 
-    def tts(self):
+    def tts(self, queue):
         # Set up the microphone
         with sr.Microphone() as source:
             print("Microphone is now listening for input up to 10 seconds")
@@ -38,12 +38,14 @@ class sound_reco():
         # print the recognized text
         print(result.text)
         
+        queue.put({"flag" : result.text})
+        
         
 if __name__ == "__main__":
     sound_reco = sound_reco()
     while True:
         key = input()
-        if key = "q":
+        if key == "q":
             break
         
         sound_reco.tts()
