@@ -85,7 +85,7 @@ class Model:
 
 
 class Just_Dance():
-    def __init__(self):
+    def __init__(self, queue):
         # Read the network from a file.
         self.model = core.read_model(model_path)
         # Let the AUTO device decide where to load the model (you can use CPU, GPU as well).
@@ -362,7 +362,7 @@ class Just_Dance():
 
 
     # Main processing function to run pose estimation.
-    def run_pose_estimation(self, source=0, flip=False, use_popup=False, skip_first_frames=0):
+    def run_pose_estimation(self, source=0, flip=False, use_popup=False, skip_first_frames=0, queue):
         pafs_output_key = self.compiled_model_p.output("Mconv7_stage2_L1")
         heatmaps_output_key = self.compiled_model_p.output("Mconv7_stage2_L2")
         player = None
@@ -606,6 +606,8 @@ class Just_Dance():
                 time.sleep(5)
             if use_popup:
                 cv2.destroyAllWindows()
+            
+            queue.put({"sound":"end"})
 
 
 # video_file='./data/m.mp4'

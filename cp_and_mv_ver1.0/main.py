@@ -42,9 +42,9 @@ class Main():
         self.mainWindow.show()
         
         flag = queue.get()
-        queue.put({"flag":flag["flag"]})
+        queue.put({"sound":flag["sound"]})
         
-        if flag["falg"] == "춤":
+        if flag["sound"] == "춤":
             self.mainWindow.hide()
             
         sys.exit(app.exec_())
@@ -52,20 +52,20 @@ class Main():
         
     def Just_Dance(self, queue):
         flag = queue.get()
-        print(flag["flag"])
+        print(flag["sound"])
         jd = dance.Just_Dance()
-        if flag["flag"] == "춤":
+        if flag["sound"] == "춤":
             USE_WEBCAM = False
             cam_id = 0
             video_file = "./m.mp4"
             source = cam_id if USE_WEBCAM else video_file
             additional_options = {"skip_first_frames": 500} if not USE_WEBCAM else {}
-            jd.run_pose_estimation(source=source, flip=False, use_popup=True, **additional_options)
+            jd.run_pose_estimation(source=source, flip=False, use_popup=True, **additional_options, queue)
 
             
     def Sound_Control(self, queue):
         self.sound = sound.sound_reco(queue)
-        self.sound.tts()
+        self.sound.tts(queue)
             
 
 if __name__ == "__main__":
