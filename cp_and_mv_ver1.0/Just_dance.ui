@@ -69,11 +69,11 @@
      <x>100</x>
      <y>150</y>
      <width>441</width>
-     <height>261</height>
+     <height>361</height>
     </rect>
    </property>
    <property name="text">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:22pt;&quot;&gt;플레이 선택&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;1. 춤&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;2. ... (준비중)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;3. ... (준비중)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:22pt;&quot;&gt;플레이 선택&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;1. 춤&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;2. 야구 (준비중)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;3. 축구 (준비중)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;4. 농구 (준비중)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;5. 골프 (준비중)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </widget>
   <widget class="QLabel" name="txt_info">
@@ -83,7 +83,7 @@
    <property name="geometry">
     <rect>
      <x>60</x>
-     <y>400</y>
+     <y>510</y>
      <width>511</width>
      <height>61</height>
     </rect>
@@ -94,20 +94,10 @@
     </font>
    </property>
    <property name="text">
-    <string>음성으로 메뉴를 선택 해 주세요</string>
+    <string>시작을 원하면 선택/시작 이라 말해주세요</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignCenter</set>
-   </property>
-  </widget>
-  <widget class="QLineEdit" name="edit_option">
-   <property name="geometry">
-    <rect>
-     <x>50</x>
-     <y>470</y>
-     <width>511</width>
-     <height>81</height>
-    </rect>
    </property>
   </widget>
   <widget class="QLabel" name="label">
