@@ -13,6 +13,8 @@ import sys
 import time
 import os
 
+import pygame
+from moviepy.editor import VideoFileClip
 import numpy as np
 import cv2
 # from IPython import display
@@ -434,12 +436,11 @@ def run_pose_estimation(source=0, flip=False, use_popup=False, skip_first_frames
         player1.start()
         if use_popup:
             title = "Press ESC to Exit windows0"
-            title1 = "Press ESC to Exit windows0 1"
-            title2 = "Press ESC to Exit windows0 2"
+           
             
            
             cv2.namedWindow(title, cv2.WINDOW_GUI_NORMAL | cv2.WINDOW_AUTOSIZE)
-            cv2.namedWindow(title1, cv2.WINDOW_GUI_NORMAL | cv2.WINDOW_AUTOSIZE)
+           
             
             
 
@@ -636,10 +637,6 @@ def run_pose_estimation(source=0, flip=False, use_popup=False, skip_first_frames
                 stacked_array = np.vstack((frame, frame1))
                 
                 cv2.imshow(title, stacked_array)
-
-                # traking_image = np.vstack((traking_image, traking_image1))
-                
-                cv2.imshow(title1, traking_image)
                 key = cv2.waitKey(1)                
                 
                 # escape = 27
@@ -677,7 +674,39 @@ def run_pose_estimation(source=0, flip=False, use_popup=False, skip_first_frames
             time.sleep(5)
         if use_popup:
             cv2.destroyAllWindows()
+def extract_audio_from_mp4(input_path, output_path):
+    try:
+        video_clip = VideoFileClip(input_path)
+        audio_clip = video_clip.audio
+        audio_clip.write_audiofile(output_path, codec='mp3')
+        audio_clip.close()
+        video_clip.close()
+        print(f"Audio extracted successfully to: {output_path}")
+    except Exception as e:
+        print(f"Error extracting audio: {e}")
+        
 
+def check_file_existence_with_pathlib(folder_path, file_name):
+    file_path = Path(folder_path) / file_name
+    if file_path.is_file():
+        return 1
+    else:
+        return 0
+
+
+def play_sound(sound_path):
+    # Pygame을 사용하여 소리 재생
+    pygame.mixer.init()
+    pygame.mixer.music.load(sound_path)
+    if pygame.mixer.get_busy():
+        print("바쁘다")
+    else : 
+        pygame.mixer.music.play()
+        
+        
+        
+        
+        
 
 # video_file='./data/m.mp4'
 # source = video_file
