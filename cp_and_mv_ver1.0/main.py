@@ -40,27 +40,28 @@ class Main():
         app = QApplication(sys.argv)
         self.mainWindow = ui.Main_UI(queue)
         self.mainWindow.show()
-        
-        flag = queue.get()
-        queue.put({"sound":flag["sound"]})
-        
-        if flag["sound"] == "춤":
-            self.mainWindow.hide()
+        while True:
+            flag = queue.get()
+            queue.put({"sound":flag["sound"]})
+            
+            if flag["sound"] == "춤":
+                self.mainWindow.hide()
             
         sys.exit(app.exec_())
 
         
     def Just_Dance(self, queue):
-        flag = queue.get()
-        print(flag["sound"])
-        jd = dance.Just_Dance()
-        if flag["sound"] == "춤":
-            USE_WEBCAM = False
-            cam_id = 0
-            video_file = "./m.mp4"
-            source = cam_id if USE_WEBCAM else video_file
-            additional_options = {"skip_first_frames": 500} if not USE_WEBCAM else {}
-            jd.run_pose_estimation(source=source, flip=False, use_popup=True, **additional_options, queue)
+        while True:
+            flag = queue.get()
+            print(flag["sound"])
+            jd = dance.Just_Dance(queue)
+            if flag["sound"] == "춤":
+                USE_WEBCAM = False
+                cam_id = 0
+                video_file = "./m.mp4"
+                source = cam_id if USE_WEBCAM else video_file
+                additional_options = {"skip_first_frames": 500} if not USE_WEBCAM else {}
+                jd.run_pose_estimation(source=source, flip=False, use_popup=True, msg_queue=queue, **additional_options)
 
             
     def Sound_Control(self, queue):

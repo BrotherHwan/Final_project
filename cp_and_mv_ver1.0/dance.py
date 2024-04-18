@@ -362,7 +362,7 @@ class Just_Dance():
 
 
     # Main processing function to run pose estimation.
-    def run_pose_estimation(self, source=0, flip=False, use_popup=False, skip_first_frames=0, queue):
+    def run_pose_estimation(self, source=0, flip=False, use_popup=False, msg_queue=None, skip_first_frames=0):
         pafs_output_key = self.compiled_model_p.output("Mconv7_stage2_L1")
         heatmaps_output_key = self.compiled_model_p.output("Mconv7_stage2_L2")
         player = None
@@ -607,7 +607,7 @@ class Just_Dance():
             if use_popup:
                 cv2.destroyAllWindows()
             
-            queue.put({"sound":"end"})
+            msg_queue.put({"sound":"end"})
 
 
 # video_file='./data/m.mp4'
