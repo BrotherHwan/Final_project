@@ -20,10 +20,13 @@ import dance
 import sound
 import ui
 
+import paho.mqtt.client as mqtt
+
 
 class Main():    
     def __init__(self):
         self.message_que = multiprocessing.Queue()
+        self.lock = multiprocessing.Lock()
         self.Main_process()
         self.subjectlist = ['댄스', '야구', '축구', '농구', '골프']
         self.subject_index = 0
@@ -36,52 +39,52 @@ class Main():
         audio_clip.preview()
      
     def Main_process(self):        
-        self.ui_p = multiprocessing.Process(target=self.UI_Load, args=(self.message_que, ))
-        dance_p = multiprocessing.Process(target=self.Just_Dance, args=(self.message_que, ))
-        self.sound_p = multiprocessing.Process(target=self.Sound_Control, args=(self.message_que, ))
+        self.ui_p = multiprocessing.Process(target=self.UI_Load, args=(self.message_que, self.lock, ))
+        dance_p = multiprocessing.Process(target=self.Just_Dance, args=(self.message_que, self.lock, ))
+        self.sound_p = multiprocessing.Process(target=self.Sound_Control, args=(self.message_que, self.lock, ))
         
         self.ui_p.start()
-        #dance_p.start()
+        # dance_p.start()
         self.sound_p.start()
         self.subject_index = 0
-        global ui_pid,sound_pid
+        global ui_pid
 
         
         ui_pid = self.ui_p.pid
-        sound_pid = self.sound_p.pid
         
-        print(f"ui :{self.ui_p.pid}")
-        print(f"sound_p :{self.sound_p.pid}")
+        
         while 1:  #ui에서 메세지큐를 통해서 스케쥴링 조정
             if self.message_que.empty() == True:
-                print("메인프로세스 슬립 1초")
-                time.sleep(0.1)
+                
+                time.sleep(0.2)
             else:
+                self.lock.acquire()
                 key, value = self.message_que.get()
+                self.lock.release()
                 if key == "ui" and value == "input":
                     self.message_que.put(("sound", "input"))
                 elif key == 'sound_input':
                     if value == "댄스":
                         self.subject_index = 0
                         self.message_que.put(("ui_update", self.subject_index))
-                        continue
-                    if value == "야구":
+                        
+                    elif value == "야구":
                         self.subject_index = 1
                         self.message_que.put(("ui_update", self.subject_index))
-                        continue
-                    if value == "농구":
+                        
+                    elif value == "농구":
                         self.subject_index = 3
                         self.message_que.put(("ui_update", self.subject_index))
-                        continue
-                    if value == "골프":
+                        
+                    elif value == "골프":
                         self.subject_index = 4
                         self.message_que.put(("ui_update", self.subject_index))
-                        continue
-                    if value == "축구":
+                       
+                    elif value == "축구":
                         self.subject_index = 2
                         self.message_que.put(("ui_update", self.subject_index))
-                        continue
-                    if value == "start":
+                       
+                    elif value == "start":
                         match self.subject_index:
                             case 0:
                                 video_clip = VideoFileClip("./m.mp4")
@@ -112,50 +115,47 @@ class Main():
         self.ui_p.join()
         dance_p.join()
 
-        self.sound_p.join()        
+        # self.sound_p.join()        
 
-    def UI_Load(self, queue):
-        # ui.UI_Start().flag_checker(queue)
-        # print(queue.get())
+    def UI_Load(self, queue, lock):
+     
         queue.put(("ui", "input"))
         app = QApplication(sys.argv)
         self.mainWindow = ui.Main_UI(queue)
 
         self.windows = self.mainWindow
         
-        q_thd = threading.Thread(target=self.que_thread, args=(queue, ))
+        q_thd = threading.Thread(target=self.que_thread, args=(queue, lock, ))
         q_thd.start()
 
         self.mainWindow.show()
+        app.exec_()
         
-        try:
-            app.exec_()
-        except KeyboardInterrupt:
-            app.kill()   
         
-    def que_thread(self, queue):
+    def que_thread(self, queue, lock):
         while True:
             
             if queue.empty():
-                time.sleep(0.3)
+                time.sleep(0.1)
             else:
+                lock.acquire()
                 key, value = queue.get()
+                lock.release()
                 if key == 'ui_update':
-                    self.mainWindow.sub_move(value)
+                    self.mainWindow.sub_move(int(value))
                     queue.put(("sound", "input"))
-                    time.sleep(2)
-                    
-                if key == "dance_score":
+                    time.sleep(0.2)
+                elif key == "dance_score":
                     self.mainWindow.score_write(str(value))
-                    time.sleep(5)
+                    time.sleep(1)
                     self.mainWindow.ui_reload()
                     queue.put(("sound", "input"))
-                    time.sleep(1)
-                    
+                    time.sleep(3)
                 else:
                     queue.put((key, value))
+                    time.sleep(1)
         
-    def Just_Dance(self, queue):
+    def Just_Dance(self, queue, lock):
         jd = dance.Just_Dance(queue)
         # 메인ui에서 큐에넣어주면 가져와서 해당 이름을 filename에 설정. queue.get()
         file_name = "m"
@@ -169,15 +169,17 @@ class Main():
         jd.run_pose_estimation(source=source, flip=False, use_popup=True, msg_queue=queue, skip_first_frames=500)
     
         
-    def Sound_Control(self, queue):      
+    def Sound_Control(self, queue, lock):      
         Sound = sound.sound_reco()
         
         while 1:   
             if queue.empty()==True:
-                time.sleep(0.5) 
+                time.sleep(0.1) 
             else :
+                lock.acquire()
                 key, value = queue.get()
-                if key=='quit' and value=='all':
+                lock.release()
+                if key == 'quit' and value == 'all':
                     
                     sys.exit()
                 elif key == "sound" and value == "input":
@@ -272,7 +274,7 @@ if __name__ == "__main__":
     sound_pid = None
     
     try:
-        my_pro = Main()
+        Main()
     except KeyboardInterrupt:
         print(f"키보드 {ui_pid}")
         target = psutil.Process(ui_pid)

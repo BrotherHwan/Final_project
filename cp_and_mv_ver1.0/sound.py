@@ -21,7 +21,7 @@ class sound_reco():
             self.recognizer.adjust_for_ambient_noise(source, duration=1)
             # print("Microphone is now listening for input up to 10 seconds")
             print("음성 명령을 내려주세요(댄스, 야구, 농구, 축구, 골프 중 하나를 골라서 이야기해주세요)")
-            audio = self.recognizer.listen(source, phrase_time_limit=5)
+            audio = self.recognizer.listen(source, phrase_time_limit=3)
             # Write audio to a WAV file
             with open("rec_input.wav", "wb") as f:
                 f.write(audio.get_wav_data())

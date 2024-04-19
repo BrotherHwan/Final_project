@@ -91,7 +91,7 @@ class Main_UI(QWidget, main_window):
         self.txt_info.setHidden(True)
         self.label.setHidden(True)
         self.txt_welcome.setHidden(False)
-        self.txt_welcome.setText(str(score))
+        self.txt_welcome.setText(str(score) + "점")
         
 # class UI_Start():
 #     def __init__(self):

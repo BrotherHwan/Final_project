@@ -29,6 +29,8 @@ from deepsort_utils.tracker import Tracker
 from deepsort_utils.nn_matching import NearestNeighborDistanceMetric
 from deepsort_utils.detection import Detection, compute_color_for_labels, xywh_to_xyxy, xywh_to_tlwh, tlwh_to_xyxy
 
+import paho.mqtt.client as mqtt
+
 # The name of the model from Open Model Zoo
 precision = "FP16-INT8"
 
@@ -124,6 +126,15 @@ class Just_Dance():
         self.default_skeleton = ((15, 13), (13, 11), (16, 14), (14, 12), (11, 12), (5, 11), (6, 12), (5, 6), (5, 7),
                                     (6, 8), (7, 9), (8, 10), (1, 2), (0, 1), (0, 2), (1, 3), (2, 4), (3, 5), (4, 6))
 
+        self.broker = "broker.hivemq.com"
+        self.port = 1883
+        
+        self.client_id = "client1"
+        
+        self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, self.client_id)
+        
+        self.client.connect(self.broker, self.port)
+    
     # 2D pooling in numpy (from: https://stackoverflow.com/a/54966908/1624463)
     def pool2d(self, A, kernel_size, stride, padding, pool_mode="max"):
         """
@@ -363,6 +374,8 @@ class Just_Dance():
 
     # Main processing function to run pose estimation.
     def run_pose_estimation(self, source=0, flip=False, use_popup=False, msg_queue=None, skip_first_frames=0):
+        timer = 0
+        
         pafs_output_key = self.compiled_model_p.output("Mconv7_stage2_L1")
         heatmaps_output_key = self.compiled_model_p.output("Mconv7_stage2_L2")
         
@@ -371,15 +384,20 @@ class Just_Dance():
         player = None
         player1 = None
         score_list=[]
+        
+        # video_clip = VideoFileClip(source)
+        # audio_clip = video_clip.audio
+        
         try:
             # Create a video player to play with target fps.
             
-                
-            player = utils.VideoPlayer(source,size=(800, 450), flip=flip, fps=33)
-            player1 = utils.VideoPlayer(source, size=(800, 450), flip=flip, fps=33)
+            # tp = threading.Thread(target=self.function_one, args=(audio_clip, ))
+            player = utils.VideoPlayer(source, size=(800, 450), flip=flip, fps=33)
+            player1 = utils.VideoPlayer(0, size=(800, 450), flip=flip, fps=33)
             # Start capturing.
             player.start()
             player1.start()
+            # tp.start()
             
         
             if use_popup:
@@ -544,6 +562,13 @@ class Just_Dance():
                 # cv2.putText(frame1, f"{int(percent_avg)}%", (600, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
 
                 score_list.append(angle_score_avg)
+                
+                send_score = int(sum(score_list) / len(score_list))
+                
+                timer = timer + 1
+                
+                if timer % 66 == 0: 
+                    self.client.publish("CPMV", f"Score : {send_score:03d}", qos=1)
             
                 _, f_width = traking_image.shape[:2]
                 # _, f_width1 = frame1.shape[:2]
@@ -624,12 +649,16 @@ class Just_Dance():
         time.sleep(0.0)
         print("음악부분 실행완료")
         audio_clip.preview()
+        #while(True):
+        #    pass
  
  
 if __name__ == "__main__":   
     
     file_name = "m"
     video_file = f"./{file_name}.mp4"
+    
+    
     
     USE_WEBCAM = False
     cam_id = 0
@@ -638,6 +667,6 @@ if __name__ == "__main__":
 
     additional_options = {"skip_first_frames": 400} if not USE_WEBCAM else {}
     # Just_Dance(None).play_sound(mp3file)
-        
-    Just_Dance(None).run_pose_estimation(source=source, flip=False, use_popup=True, msg_queue=None,**additional_options)
+    jd = Just_Dance(None)   
+    jd.run_pose_estimation(source=source, flip=False, use_popup=True, msg_queue=None,**additional_options)
     
