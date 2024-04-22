@@ -5,7 +5,8 @@ import os
 import sys
 import psutil
 import time
-import pymysql
+
+
 
 from moviepy.editor import VideoFileClip
 
@@ -23,6 +24,7 @@ import ui
 import paho.mqtt.client as mqtt
 
 
+
 class Main():    
     def __init__(self):
         self.message_que = multiprocessing.Queue()
@@ -33,8 +35,10 @@ class Main():
         self.windows = None
         self.pd = None
         
+        
     def function_one(self, audio_clip):
-        time.sleep(1.4)
+        
+        time.sleep(1)
         print("음악부분 실행완료")
         audio_clip.preview()
      
@@ -44,7 +48,7 @@ class Main():
         self.sound_p = multiprocessing.Process(target=self.Sound_Control, args=(self.message_que, self.lock, ))
         
         self.ui_p.start()
-        # dance_p.start()
+        dance_p.start()
         self.sound_p.start()
         self.subject_index = 0
         global ui_pid
@@ -56,7 +60,7 @@ class Main():
         while 1:  #ui에서 메세지큐를 통해서 스케쥴링 조정
             if self.message_que.empty() == True:
                 
-                time.sleep(0.2)
+                time.sleep(0.1)
             else:
                 self.lock.acquire()
                 key, value = self.message_que.get()
@@ -87,33 +91,36 @@ class Main():
                     elif value == "start":
                         match self.subject_index:
                             case 0:
+                                
                                 video_clip = VideoFileClip("./m.mp4")
                                 audio_clip = video_clip.audio
+                                audio_clip = video_clip.audio
+                                self.message_que.put(("dance_p","start"))
                                 tp = threading.Thread(target=self.function_one, args=(audio_clip, ))
                                 tp.start()
-                                dance_p.start()
-
-                                break
+                                tp.join()    
+                                
+                                continue
                                 
                             case 1:
-                                break
+                                continue
                                 
                             case 2:
-                                break
+                                continue
                                 
                             case 3:
-                                break
+                                continue
                                 
                             case 4:
-                                break    
+                                continue
                     
                 else:
                     self.message_que.put((key, value))
                     time.sleep(0.3)
 
-        tp.join()    
+
         self.ui_p.join()
-        dance_p.join()
+        
 
         # self.sound_p.join()        
 
@@ -165,8 +172,15 @@ class Main():
         cam_id = 0
         
         source = cam_id if USE_WEBCAM else video_file
-        
-        jd.run_pose_estimation(source=source, flip=False, use_popup=True, msg_queue=queue, skip_first_frames=500)
+        while 1:
+            lock.acquire()
+            key, value = queue.get()
+            lock.release()
+            if key == "dance_p" and value == "start":
+                jd.run_pose_estimation(source=source, flip=False, use_popup=True, msg_queue=queue, skip_first_frames=500)
+            else:
+                queue.put((key,value))
+                time.sleep(1)
     
         
     def Sound_Control(self, queue, lock):      
@@ -179,10 +193,8 @@ class Main():
                 lock.acquire()
                 key, value = queue.get()
                 lock.release()
-                if key == 'quit' and value == 'all':
-                    
-                    sys.exit()
-                elif key == "sound" and value == "input":
+                
+                if key == "sound" and value == "input":
                     
                     while 1:
                         print("음성명령 인식부분 들어옴.")
@@ -217,56 +229,6 @@ class Main():
                     print(f"key:{key}, value:{value} 큐에 다시 넣음..")
                     time.sleep(1)
                     
-    def db_insert(self, name, score):
-        
-        db_config = {
-                'host': '10.10.52.141',
-                'port':3306,
-                'user': 'jsum',
-                'password': '11110000',
-                'database': 'dance_record'
-                }
-        
-        try:
-            conn = pymysql.connect(**db_config)
-            # MySQL 서버에 연결
-            
-            if conn.open:
-                print('MySQL 서버에 연결되었습니다.')
-            else:
-                print('MySQL 서버에 연결할 수 없습니다.')
-                
-                
-                ###########  기록 삽입
-                # 데이터 삽입을 위한 SQL 쿼리
-            insert_query = "INSERT INTO dance_score (id, score) VALUES (%s, %s)"
-            update_query = "UPDATE dance_score SET score = %s WHERE id = %s"
-
-            # 데이터 삽입할 값
-            data_to_insert = ('test1', '101')
-
-            # 커서 생성
-            cursor = conn.cursor()
-
-            # 쿼리 실행 (인서트)
-            # cursor.execute(insert_query, data_to_insert)
-            new_score = 95  # 새로운 점수
-            username = 'test1'  # 업데이트할 사용자 이름
-
-            # 쿼리 실행
-            cursor.execute(update_query, (new_score, username))
-
-            # 변경사항 커밋
-            conn.commit()
-
-            print(f'{cursor.rowcount}개의 레코드가 삽입되었습니다.')
-
-        # 커서 및 연결 닫기
-            cursor.close()
-            conn.close()
-        except pymysql.Error as e:
-            print(f'MySQL 에러 발생: {e}')
-
 
 if __name__ == "__main__":
     

@@ -13,8 +13,8 @@ import time
 import os
 
 # import pygame
-from moviepy.editor import VideoFileClip
-from moviepy.editor import AudioFileClip
+# from moviepy.editor import VideoFileClip
+# from moviepy.editor import AudioFileClip
 
 import numpy as np
 import cv2
@@ -23,13 +23,15 @@ import openvino as ov
 
 from numpy.lib.stride_tricks import as_strided
 from decoder import OpenPoseDecoder
+import paho.mqtt.client as mqtt
 
+from statistics import mean
 import utils.notebook_utils as utils
 from deepsort_utils.tracker import Tracker
 from deepsort_utils.nn_matching import NearestNeighborDistanceMetric
 from deepsort_utils.detection import Detection, compute_color_for_labels, xywh_to_xyxy, xywh_to_tlwh, tlwh_to_xyxy
 
-import paho.mqtt.client as mqtt
+
 
 # The name of the model from Open Model Zoo
 precision = "FP16-INT8"
@@ -59,7 +61,7 @@ class Model:
 
     """
 
-    def __init__(self, model_path, batchsize=1, device="CPU"):
+    def __init__(self, model_path, batchsize=1, device="GPU"):
 
         """
         Initialize the model object
@@ -98,10 +100,19 @@ class Model:
 class Just_Dance():
     def __init__(self, queue):
         # Read the network from a file.
+        self.broker = "broker.hivemq.com"
+        self.port = 1883
+        
+        self.client_id = "client1"
+        
+        self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, self.client_id)
+        
+        self.client.connect(self.broker, self.port)
+        
         self.model = core.read_model(model_path)
 
         # Let the AUTO device decide where to load the model (you can use CPU, CPU as well).
-        self.compiled_model_p = core.compile_model(model=self.model, device_name="CPU", config={"PERFORMANCE_HINT": "LATENCY"})
+        self.compiled_model_p = core.compile_model(model=self.model, device_name="GPU", config={"PERFORMANCE_HINT": "LATENCY"})
 
         # Get the input and output names of nodes.
         self.input_layer = self.compiled_model_p.input(0)
@@ -111,9 +122,9 @@ class Just_Dance():
         self.height_p, self.width_p = list(self.input_layer.shape)[2:]
         # print(self.input_layer.shape)
 
-        self.detector = Model(detection_model_path, device="CPU")
+        self.detector = Model(detection_model_path, device="GPU")
         # since the number of detection object is uncertain, the input batch size of reid model should be dynamic
-        self.extractor = Model(reidentification_model_path, -1, "CPU")
+        self.extractor = Model(reidentification_model_path, -1, "GPU")
 
         # input_layer.any_name, [o.any_name for o in output_layers]
 
@@ -126,14 +137,7 @@ class Just_Dance():
         self.default_skeleton = ((15, 13), (13, 11), (16, 14), (14, 12), (11, 12), (5, 11), (6, 12), (5, 6), (5, 7),
                                     (6, 8), (7, 9), (8, 10), (1, 2), (0, 1), (0, 2), (1, 3), (2, 4), (3, 5), (4, 6))
 
-        self.broker = "broker.hivemq.com"
-        self.port = 1883
         
-        self.client_id = "client1"
-        
-        self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, self.client_id)
-        
-        self.client.connect(self.broker, self.port)
     
     # 2D pooling in numpy (from: https://stackoverflow.com/a/54966908/1624463)
     def pool2d(self, A, kernel_size, stride, padding, pool_mode="max"):
@@ -327,7 +331,7 @@ class Just_Dance():
             return img, angle_list
         
         img_limbs = np.copy(img)
-        for pose in poses:
+        for pose in poses[0:1]:
             points = pose[:, :2].astype(np.int32)
 
             angle_l_shoul = self.calculate_angle(points[3][0], points[3][1], points[5][0], points[5][1], points[7][0], points[7][1])
@@ -392,8 +396,8 @@ class Just_Dance():
             # Create a video player to play with target fps.
             
             # tp = threading.Thread(target=self.function_one, args=(audio_clip, ))
-            player = utils.VideoPlayer(source, size=(800, 450), flip=flip, fps=33)
-            player1 = utils.VideoPlayer(0, size=(800, 450), flip=flip, fps=33)
+            player = utils.VideoPlayer(source, size=(900, 500), flip=flip, fps=33)
+            player1 = utils.VideoPlayer(0, size=(900, 500), flip=flip, fps=33)
             # Start capturing.
             player.start()
             player1.start()
@@ -403,8 +407,10 @@ class Just_Dance():
             if use_popup:
                 title = "Press ESC to Exit windows0"
                 cv2.namedWindow(title, cv2.WINDOW_GUI_NORMAL | cv2.WINDOW_AUTOSIZE)
+                cv2.moveWindow(title,3000,50)
                 
             processing_times = collections.deque()
+            start = time.time() 
 
             while True:
                 #############################person tracking##############################################
@@ -434,23 +440,21 @@ class Just_Dance():
                 input_image1 = self.preprocess(frame1, self.detector.height, self.detector.width)
                 
                 # Measure processing time.
-                start_time = time.time()
                 
+                # start_time = time.time()
                 # Get the results.
                 output = self.detector.predict(input_image)
                 # output1 = self.detector.predict(input_image1)
                 
-                stop_time = time.time()
-                processing_times.append(stop_time - start_time)
-                if len(processing_times) > 200:
-                    processing_times.popleft()
+                
+                
 
                 _, f_width = frame.shape[:2]
                 # _, f_width1 = frame1.shape[:2]
                 
                 # Mean processing time [ms].
-                processing_time = np.mean(processing_times) * 1100
-                fps = 1000 / processing_time
+                # processing_time = np.mean(processing_times) * 1100
+                # fps = 1000 / processing_time
 
                 # Get poses from detection results.
                 bbox_xywh, score, _ = self.process_results(h, w, results=output)
@@ -511,7 +515,11 @@ class Just_Dance():
                 # Get results.
                 results_p = self.compiled_model_p([input_img])
                 results1_p = self.compiled_model_p([input_img1])
+                # stop_time = time.time()
                 
+                # processing_times.append(stop_time - start_time)
+                # if len(processing_times) > 200:
+                #     processing_times.popleft()
                 pafs = results_p[pafs_output_key]
                 heatmaps = results_p[heatmaps_output_key]
 
@@ -555,7 +563,14 @@ class Just_Dance():
                 if skip_count == 8:
                     continue
                 
-                angle_score_avg = total_angle_score/(8-skip_count)
+                # angle_score_avg = total_angle_score/(8-skip_count)
+                denominator = 8 - skip_count
+                if denominator != 0:
+                    angle_score_avg = total_angle_score / denominator
+                else:
+                    # 분모가 0이 되는 경우 처리
+                    angle_score_avg = None  # 또는 다른 적절한 처리
+                angle_score_avg = total_angle_score / denominator
                 
                 cv2.putText(frame1, f"score : {int(angle_score_avg)}", (600, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
                 # percent_avg = total_percent/8
@@ -563,20 +578,24 @@ class Just_Dance():
 
                 score_list.append(angle_score_avg)
                 
-                send_score = int(sum(score_list) / len(score_list))
                 
-                timer = timer + 1
-                
-                if timer % 66 == 0: 
-                    self.client.publish("CPMV", f"Score : {send_score:03d}", qos=1)
+
+                send_score = f"Score : {int(mean(score_list))}"
+                # send_score = int(sum(score_list) / len(score_list))
+                if time.time() - start >= 0.5 : 
+                    
+                    self.client.publish("CPMV", send_score, qos=0)
+                    start = time.time()    
+                 
             
                 _, f_width = traking_image.shape[:2]
                 # _, f_width1 = frame1.shape[:2]
                 # mean processing time [ms]
                 
-                cv2.putText(frame, f"Inference time: {processing_time:.1f}ms ({fps:.1f} FPS)", (20, 40),
-                            cv2.FONT_HERSHEY_COMPLEX, f_width / 1000, (0, 0, 255), 1, cv2.LINE_AA)
-                # cv2.putText(frame1, f"Inference time: {processing_time:.1f}ms ({fps:.1f} FPS)", (20, 40),
+                
+                # cv2.putText(frame, f"Inference time: {processing_time:.1f}ms ({fps:.1f} FPS)", (20, 40),
+                #             cv2.FONT_HERSHEY_COMPLEX, f_width / 1000, (0, 0, 255), 1, cv2.LINE_AA)
+                # # cv2.putText(frame1, f"Inference time: {processing_time:.1f}ms ({fps:.1f} FPS)", (20, 40),
                 #             cv2.FONT_HERSHEY_COMPLEX, f_width1 / 1000, (0, 0, 255), 1, cv2.LINE_AA)
 
                 # Use this workaround if there is flickering.
@@ -594,6 +613,7 @@ class Just_Dance():
                     
                     
                     cv2.imshow(title, stacked_array)
+                    
                     # video_clip.preview()
                     key = cv2.waitKey(1)                
                     
@@ -606,23 +626,11 @@ class Just_Dance():
                         if msg_queue != None:
                             msg_queue.put(("quit","all"))
                         break
-                else:
-                    # Encode numpy array to jpg.
-                    _, encoded_img = cv2.imencode(".jpg", frame, params=[cv2.IMWRITE_JPEG_QUALITY, 90])
-                    # Create an IPython image.
-                    i = display.Image(data=encoded_img)
-                    # Display the image in this notebook.
-                    display.clear_output(wait=True)
-                    display.display(i)
+       
                     
-        # ctrl-c
-        except KeyboardInterrupt:
-            print("Interrupted")
-        # any different error
-        except RuntimeError as e:
-            print(e)
+       
         finally:
-            # 현재 프로세스의 이름을 가져옵니다.
+       
             
         
             if player is not None:
@@ -636,7 +644,7 @@ class Just_Dance():
                 print(f"final score : {int(score)}")
                 # show_popup_message(f"score : {int(score)}")
                             # cv2.putText(frame1, f"score : {int(score)}", (600, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
-                time.sleep(5)
+                
                 
             if use_popup:
                 cv2.destroyAllWindows()
@@ -644,13 +652,14 @@ class Just_Dance():
             if msg_queue != None:
                 msg_queue.put(("dance_score", int(score)))
                 
+            
     
-    def function_one(self, audio_clip):
-        time.sleep(0.0)
-        print("음악부분 실행완료")
-        audio_clip.preview()
-        #while(True):
-        #    pass
+    # def function_one(self, audio_clip):
+    #     time.sleep(0.0)
+    #     print("음악부분 실행완료")
+    #     audio_clip.preview()
+    #     #while(True):
+    #     #    pass
  
  
 if __name__ == "__main__":   

@@ -21,7 +21,7 @@ class Main_UI(QWidget, main_window):
         super().__init__()
         self.setupUi(self)
         
-        self.pos = [260, 310, 360, 410, 460]
+        self.pos = [260, 310, 360, 410, 457]
         self.pos_idx = 0
         
         self.txt_title.setHidden(True)
