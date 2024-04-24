@@ -8,7 +8,7 @@ from setproctitle import getproctitle
 
 import collections
 from pathlib import Path
-import sys
+# import sys
 import time
 import os
 
@@ -17,7 +17,7 @@ import os
 # from moviepy.editor import AudioFileClip
 
 import numpy as np
-import cv2
+# import cv2
 # from IPython import display
 import openvino as ov
 
@@ -31,20 +31,26 @@ from deepsort_utils.tracker import Tracker
 from deepsort_utils.nn_matching import NearestNeighborDistanceMetric
 from deepsort_utils.detection import Detection, compute_color_for_labels, xywh_to_xyxy, xywh_to_tlwh, tlwh_to_xyxy
 
+import cv2
+import pygame
+from pydub import AudioSegment
+
+import multiprocessing
+
 
 
 # The name of the model from Open Model Zoo
 precision = "FP16-INT8"
 
 
-detection_model_name = "person-detection-0202"
+# detection_model_name = "person-detection-0202"
 
-detection_model_path = f"model/intel/{detection_model_name}/{precision}/{detection_model_name}.xml"
+# detection_model_path = f"model/intel/{detection_model_name}/{precision}/{detection_model_name}.xml"
 
 
-reidentification_model_name = "person-reidentification-retail-0287"
+# reidentification_model_name = "person-reidentification-retail-0287"
 
-reidentification_model_path = f"model/intel/{reidentification_model_name}/{precision}/{reidentification_model_name}.xml"
+# reidentification_model_path = f"model/intel/{reidentification_model_name}/{precision}/{reidentification_model_name}.xml"
 
 
 # The name of the model from Open Model Zoo.
@@ -61,7 +67,7 @@ class Model:
 
     """
 
-    def __init__(self, model_path, batchsize=1, device="GPU"):
+    def __init__(self, model_path, batchsize=1, device="CPU"):
 
         """
         Initialize the model object
@@ -111,8 +117,8 @@ class Just_Dance():
         
         self.model = core.read_model(model_path)
 
-        # Let the AUTO device decide where to load the model (you can use CPU, CPU as well).
-        self.compiled_model_p = core.compile_model(model=self.model, device_name="GPU", config={"PERFORMANCE_HINT": "LATENCY"})
+        # Let the AUTO device decide where to load the model (you can use CPU, GPU as well).
+        self.compiled_model_p = core.compile_model(model=self.model, device_name="CPU", config={"PERFORMANCE_HINT": "LATENCY"})
 
         # Get the input and output names of nodes.
         self.input_layer = self.compiled_model_p.input(0)
@@ -122,9 +128,9 @@ class Just_Dance():
         self.height_p, self.width_p = list(self.input_layer.shape)[2:]
         # print(self.input_layer.shape)
 
-        self.detector = Model(detection_model_path, device="GPU")
-        # since the number of detection object is uncertain, the input batch size of reid model should be dynamic
-        self.extractor = Model(reidentification_model_path, -1, "GPU")
+        # self.detector = Model(detection_model_path, device="GPU")
+        # # since the number of detection object is uncertain, the input batch size of reid model should be dynamic
+        # self.extractor = Model(reidentification_model_path, -1, "GPU")
 
         # input_layer.any_name, [o.any_name for o in output_layers]
 
@@ -325,98 +331,113 @@ class Just_Dance():
         font = cv2.FONT_HERSHEY_SIMPLEX  # 텍스트 폰트
         font_scale = 0.5  # 텍스트 크기 배율
         font_color = (255, 255, 255)  # 텍스트 색상 (BGR 형식)
-        angle_list = [0, 0, 0, 0, 0, 0, 0, 0]
-        
+        angle_list = [-1, -1, -1, -1, -1, -1, -1, -1]
+        angle_point_list = [(0,0),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0)]
         if poses.size == 0:
-            return img, angle_list
+            return img, angle_list,angle_point_list
         
-        img_limbs = np.copy(img)
+        # img_limbs = np.copy(img)
         for pose in poses[0:1]:
             points = pose[:, :2].astype(np.int32)
 
             angle_l_shoul = self.calculate_angle(points[3][0], points[3][1], points[5][0], points[5][1], points[7][0], points[7][1])
+            angle_l_shoul_point = (points[5][0],points[5][1])
             #cv2.putText(img, f"{angle_l_shoul}", (points[5][0]+10, points[5][1]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100,255,0), 1)
             
             angle_r_shoul = self.calculate_angle(points[4][0], points[4][1], points[6][0], points[6][1], points[8][0], points[8][1])
+            angle_r_shoul_point = (points[6][0],points[6][1])
             #cv2.putText(img, f"{angle_r_shoul}", (points[6][0]+10, points[6][1]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100,255,0), 1)
             
             angle_l_elbow = self.calculate_angle(points[5][0], points[5][1], points[7][0], points[7][1], points[9][0], points[9][1])
+            angle_l_elbow_point = (points[7][0],points[7][1])
             #cv2.putText(img, f"{angle_l_elbow}", (points[7][0]+10, points[7][1]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100,255,0), 1)
             
+            
             angle_r_elbow = self.calculate_angle(points[6][0], points[6][1], points[8][0], points[8][1], points[10][0], points[10][1])
+            angle_r_elbow_point = (points[8][0],points[8][1])
             #cv2.putText(img, f"{angle_r_elbow}", (points[8][0]+10, points[8][1]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100,255,0), 1)
             
             angle_l_hip = self.calculate_angle(points[5][0], points[5][1], points[11][0], points[11][1], points[13][0], points[13][1])
+            angle_l_hip_point = (points[11][0],points[11][1])
             #cv2.putText(img, f"{angle_l_hip}", (points[11][0]+10, points[11][1]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100,255,0), 1)
             
             angle_r_hip = self.calculate_angle(points[6][0], points[6][1], points[12][0], points[12][1], points[14][0], points[14][1])
+            angle_r_hip_point=(points[12][0],points[12][1])
             #cv2.putText(img, f"{angle_r_hip}", (points[12][0]+10, points[12][1]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100,255,0), 1)
         
             angle_l_knee = self.calculate_angle(points[11][0], points[11][1], points[13][0], points[13][1], points[15][0], points[15][1])
+            angle_l_knee_point=(points[13][0],points[13][1])
             #cv2.putText(img, f"{angle_l_knee}", (points[13][0]+10, points[13][1]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100,255,0), 1)
             
             angle_r_knee = self.calculate_angle(points[12][0], points[12][1], points[14][0], points[14][1], points[16][0], points[16][1])
+            angle_r_knee_point=(points[14][0],points[14][1])
             #cv2.putText(img, f"{angle_r_knee}", (points[14][0]+10, points[14][1]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100,255,0), 1)
 
             angle_list = [angle_l_shoul, angle_r_shoul, angle_l_elbow, angle_r_elbow, angle_l_hip, angle_r_hip, angle_l_knee, angle_r_knee]
+            angle_point_list=[angle_l_shoul_point, angle_r_shoul_point, angle_l_elbow_point, angle_r_elbow_point, angle_l_hip_point, angle_r_hip_point, angle_l_knee_point, angle_r_knee_point]
             
-            points_scores = pose[:, 2]
-            # Draw joints.
-            for i, (p, v) in enumerate(zip(points, points_scores)):
-                if v > point_score_threshold:
-                    cv2.circle(img, tuple(p), 1, self.colors[i], 2)
-                    # cv2.putText(img, f"({p[0]}, {p[1]})", (p[0] + 10, p[1] - 10), font, font_scale, font_color, 1)
+        #     points_scores = pose[:, 2]
+        #     # Draw joints.
+        #     for i, (p, v) in enumerate(zip(points, points_scores)):
+        #         if v > point_score_threshold:
+        #             cv2.circle(img, tuple(p), 1, self.colors[0], 2)
+        #             # cv2.putText(img, f"({p[0]}, {p[1]})", (p[0] + 10, p[1] - 10), font, font_scale, font_color, 1)
                 
-            # Draw limbs.
-            for i, j in skeleton:
-                if points_scores[i] > point_score_threshold and points_scores[j] > point_score_threshold:
-                    cv2.line(img_limbs, tuple(points[i]), tuple(points[j]), color=self.colors[j], thickness=4)
+        #     # Draw limbs.
+        #     for i, j in skeleton:
+        #         if points_scores[i] > point_score_threshold and points_scores[j] > point_score_threshold:
+        #             cv2.line(img_limbs, tuple(points[i]), tuple(points[j]), color=self.colors[0], thickness=4)
                     
-        cv2.addWeighted(img, 0.9, img_limbs, 0.1, 0, dst=img)
+        # cv2.addWeighted(img, 0.9, img_limbs, 0.1, 0, dst=img)
         
-        return img, angle_list
+        return img, angle_list, angle_point_list
 
     # Main processing function to run pose estimation.
-    def run_pose_estimation(self, source=0, flip=False, use_popup=False, msg_queue=None, skip_first_frames=0):
-        timer = 0
+    def run_pose_estimation(self, source=0, flip=False, use_popup=False, msg_queue=None, skip_first_frames=0,index=0):
+        
+        
+        # process1 = multiprocessing.Process(target=sync_audio_video, args=(source,))
+        # process1.start()  # Start the process
+        
         
         pafs_output_key = self.compiled_model_p.output("Mconv7_stage2_L1")
         heatmaps_output_key = self.compiled_model_p.output("Mconv7_stage2_L2")
-        
-        
         
         player = None
         player1 = None
         score_list=[]
         
-        # video_clip = VideoFileClip(source)
-        # audio_clip = video_clip.audio
         
         try:
             # Create a video player to play with target fps.
-            
-            # tp = threading.Thread(target=self.function_one, args=(audio_clip, ))
-            player = utils.VideoPlayer(source, size=(900, 500), flip=flip, fps=33)
-            player1 = utils.VideoPlayer(0, size=(900, 500), flip=flip, fps=33)
+        
+            player = utils.VideoPlayer(source, size=(900, 500), flip=flip, fps=20)
+            player1 = utils.VideoPlayer(source, size=(900, 500), flip=flip, fps=20)
             # Start capturing.
+            if index==0:
+                sync_audio_play(source)
+                
             player.start()
             player1.start()
-            # tp.start()
             
-        
             if use_popup:
                 title = "Press ESC to Exit windows0"
                 cv2.namedWindow(title, cv2.WINDOW_GUI_NORMAL | cv2.WINDOW_AUTOSIZE)
-                cv2.moveWindow(title,3000,50)
+                # cv2.moveWindow(title,3000,50)
                 
-            processing_times = collections.deque()
-            start = time.time() 
+            # processing_times = collections.deque()
+            
+            
+            
+            frame_count = 0
+            start_time = time.time()
+            start= time.time()
 
             while True:
-                #############################person tracking##############################################
-                #
+                
                 frame = player.next()
                 frame1 = player1.next()
+                frame_count += 1
                 
                 if frame is None:
                     print("Source ended")
@@ -425,88 +446,22 @@ class Just_Dance():
                 if frame1 is None:
                     print("Source ended")
                     break
+    
+                elapsed_time = time.time() - start_time
+                if elapsed_time >= 1.0:  # 1초마다 FPS 계산
+                    fps = frame_count / elapsed_time
+                    print(f"FPS: {fps:.2f}")
 
-                scale = 1280 / max(frame.shape)
-                scale1 = 1280 / max(frame1.shape)
-                if scale < 1:
-                    frame = cv2.resize(frame, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
-                    
-                if scale1 < 1:
-                    frame1 = cv2.resize(frame1, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)                
-                                    
-                h, w = frame.shape[:2]
-                                
-                input_image = self.preprocess(frame, self.detector.height, self.detector.width)
-                input_image1 = self.preprocess(frame1, self.detector.height, self.detector.width)
-                
-                # Measure processing time.
-                
-                # start_time = time.time()
-                # Get the results.
-                output = self.detector.predict(input_image)
-                # output1 = self.detector.predict(input_image1)
-                
-                
-                
-
-                _, f_width = frame.shape[:2]
-                # _, f_width1 = frame1.shape[:2]
-                
-                # Mean processing time [ms].
-                # processing_time = np.mean(processing_times) * 1100
-                # fps = 1000 / processing_time
-
-                # Get poses from detection results.
-                bbox_xywh, score, _ = self.process_results(h, w, results=output)
-                # bbox_xywh1, score1, _ = self.process_results(h, w, results=output1)
-                    
-                if len(bbox_xywh):
-                    x1, y1, x2, y2 = xywh_to_xyxy(bbox_xywh[0], h, w)
-                    width = (x2+x1)
-                    height = (y2+y1)
-                    CX = int(width/2)
-                    CY = int(height/2)
-                    
-                    y1 = CY - int(0.7 * self.height_p)
-                    y2 = CY + int(0.6 * self.height_p)
-                    
-                    x1 = CX - int(0.5 * self.width_p)
-                    x2 = CX + int(0.5 * self.width_p)
-                    
-                    #y1 = y1 + CY - int(height_p/2)
-                    #y2 = y2 - CY + int(height_p/2)
-                    #x1 = x1 + CX - int(width_p/2)
-                    #x2 = x2 - CX + int(width_p/2)
-                    traking_image = copy.deepcopy(frame[y1:y2, x1:x2])
-                    #print(traking_image.shape,end='\r')
-                else : 
-                    continue 
-
-                # if len(bbox_xywh1):
-                #     x11, y11, x21, y21 = xywh_to_xyxy(bbox_xywh1[0], h, w)
-                #     width1 = (x21+x11)
-                #     height1 = (y21+y11)
-                #     CX = int(width1/2)
-                #     CY = int(height1/2)
-                    
-                #     y11 = CY - int(0.8*height_p)
-                #     y21 = CY + int(0.6*height_p)
-                    
-                #     x11 = CX - int(0.3*width_p)
-                #     x21 = CX + int(0.3*width_p)
-                    
-                #     #y1 = y1 + CY - int(height_p/2)
-                #     #y2 = y2 - CY + int(height_p/2)
-                #     #x1 = x1 + CX - int(width_p/2)
-                #     #x2 = x2 - CX + int(width_p/2)
-                #     traking_image1 = frame1[y11:y21, x11:x21]
-                #     #print(traking_image.shape,end='\r')
-                # else : 
+                    # FPS 계산을 위한 변수 재설정
+                    frame_count = 0
+                    start_time = time.time()
+        
+                traking_image = frame
                 traking_image1 = frame1
 
                 input_img = cv2.resize(traking_image, (self.width_p, self.height_p), interpolation=cv2.INTER_AREA)
                 input_img1 = cv2.resize(traking_image1, (self.width_p, self.height_p), interpolation=cv2.INTER_AREA)
-                
+                print("넓이:",self.width_p,"높이:", self.height_p)
                 input_img = input_img.transpose((2,0,1))[np.newaxis, ...]
                 input_img1 = input_img1.transpose((2,0,1))[np.newaxis, ...]
 
@@ -515,11 +470,7 @@ class Just_Dance():
                 # Get results.
                 results_p = self.compiled_model_p([input_img])
                 results1_p = self.compiled_model_p([input_img1])
-                # stop_time = time.time()
                 
-                # processing_times.append(stop_time - start_time)
-                # if len(processing_times) > 200:
-                #     processing_times.popleft()
                 pafs = results_p[pafs_output_key]
                 heatmaps = results_p[heatmaps_output_key]
 
@@ -533,33 +484,46 @@ class Just_Dance():
                 
                 # Draw poses on a frame.
                 
-                traking_image, answer_list = self.draw_poses(traking_image, poses, 0.1, self.default_skeleton)
-                traking_image1, player_list = self.draw_poses(traking_image1, poses1, 0.1, self.default_skeleton)
-                # frame1 = draw_poses(traking_image1, poses1, 0.1)
-                # percent = 0
-                # total_percent = 0
+                traking_image, answer_list,answer_point_list = self.draw_poses(traking_image, poses, 0.6, self.default_skeleton)
+                traking_image1, player_list,player_point_list = self.draw_poses(traking_image1, poses1, 0.6, self.default_skeleton)
+                
                 total_angle_score = 0
                 angle_score = 0
+                skip_count = 0
+                try:
+                    for i in range(8):
+                        if answer_list[i] == -1 or player_list[i] == -1:
+                            skip_count += 1
+                            continue
+                        
+                        angle_dif = abs(answer_list[i] - player_list[i])
+                        
+                        if angle_dif > 90:
+                            angle_score = 0
+                        elif angle_dif > 60:
+                            #빨강
+                            cv2.circle(traking_image1, player_point_list[i], 4, (0, 0, 255), -1)
+                            angle_score = 40
+                        elif angle_dif > 30:
+                            #빨강
+                            cv2.circle(traking_image1, player_point_list[i], 4, (0, 0, 255), -1)
+                            angle_score = 80
+                        elif angle_dif > 20:
+                            #노랑
+                            cv2.circle(traking_image1, player_point_list[i], 4, (0,255,255), -1)
+                            angle_score = 90
+                        elif angle_dif > 10:
+                            #녹색
+                            angle_score = 95
+                            cv2.circle(traking_image1, player_point_list[i], 4, (0, 255, 0), -1)
+                        else:
+                            angle_score = 100
+                            
+                        total_angle_score += angle_score
+                except:
+                    pass
 
-                for i in range(8):
-                    if i == 0:
-                        skip_count = 0
-                    if answer_list[i] == -1 or player_list[i] == -1:
-                        skip_count += 1
-                        continue
-                    angle_dif = abs(answer_list[i] - player_list[i])
-                    if angle_dif > 90:
-                        angle_score = 0
-                    elif angle_dif > 60:
-                        angle_score = 40
-                    elif angle_dif > 30:
-                        angle_score = 80
-                    elif angle_dif > 0:
-                        angle_score = 100
-
-                    total_angle_score += angle_score
-                    # percent = 100 - abs((answer_list[i] - player_list[i])/180 * 100)
-                    # total_percent += percent
+             
                 if skip_count == 8:
                     continue
                 
@@ -570,47 +534,21 @@ class Just_Dance():
                 else:
                     # 분모가 0이 되는 경우 처리
                     angle_score_avg = None  # 또는 다른 적절한 처리
-                angle_score_avg = total_angle_score / denominator
                 
-                cv2.putText(frame1, f"score : {int(angle_score_avg)}", (600, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
-                # percent_avg = total_percent/8
-                # cv2.putText(frame1, f"{int(percent_avg)}%", (600, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
-
                 score_list.append(angle_score_avg)
                 
-                
-
                 send_score = f"Score : {int(mean(score_list))}"
-                # send_score = int(sum(score_list) / len(score_list))
+                cv2.putText(frame1, f"score : {int(angle_score_avg)}", (600, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
+                
                 if time.time() - start >= 0.5 : 
                     
                     self.client.publish("CPMV", send_score, qos=0)
                     start = time.time()    
                  
             
-                _, f_width = traking_image.shape[:2]
-                # _, f_width1 = frame1.shape[:2]
-                # mean processing time [ms]
-                
-                
-                # cv2.putText(frame, f"Inference time: {processing_time:.1f}ms ({fps:.1f} FPS)", (20, 40),
-                #             cv2.FONT_HERSHEY_COMPLEX, f_width / 1000, (0, 0, 255), 1, cv2.LINE_AA)
-                # # cv2.putText(frame1, f"Inference time: {processing_time:.1f}ms ({fps:.1f} FPS)", (20, 40),
-                #             cv2.FONT_HERSHEY_COMPLEX, f_width1 / 1000, (0, 0, 255), 1, cv2.LINE_AA)
-
-                # Use this workaround if there is flickering.
+            
                 if use_popup:
-
-                    # print(frame.shape)
-                    # print(frame1.shape)
-                    
-                    # 두 번째 함수를 실행할 쓰레드 생성
-
-                    # 쓰레드 시작
-
-                    # 쓰레드가 종료될 때까지 기다림
                     stacked_array = np.vstack((frame, frame1))
-                    
                     
                     cv2.imshow(title, stacked_array)
                     
@@ -622,28 +560,27 @@ class Just_Dance():
                         print("Window Closed")
                         player.stop()
                         player1.stop()
+                        if index==0:
+                            pygame.mixer.music.stop()
                         cv2.destroyAllWindows()
                         if msg_queue != None:
                             msg_queue.put(("quit","all"))
                         break
        
-                    
-       
         finally:
        
-            
-        
             if player is not None:
                 # Stop capturing.
                 
                 player.stop()
                 player1.stop()
+                if index==0:
+                    pygame.mixer.music.stop()
+                
         
             if len(score_list) != 0:                
                 score = sum(score_list)/(len(score_list)+0.0001)
                 print(f"final score : {int(score)}")
-                # show_popup_message(f"score : {int(score)}")
-                            # cv2.putText(frame1, f"score : {int(score)}", (600, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
                 
                 
             if use_popup:
@@ -651,21 +588,32 @@ class Just_Dance():
                 
             if msg_queue != None:
                 msg_queue.put(("dance_score", int(score)))
+            # process1.join()
                 
-            
-    
-    # def function_one(self, audio_clip):
-    #     time.sleep(0.0)
-    #     print("음악부분 실행완료")
-    #     audio_clip.preview()
-    #     #while(True):
-    #     #    pass
- 
+     
+def extract_and_convert_audio(video_path, audio_format="mp3"):
+    audio_path = video_path.rsplit('.', 1)[0] + '.' + audio_format
+    os.system(f'ffmpeg -i "{video_path}" -q:a 0 -map a "{audio_path}" -y')
+    return audio_path
+
+def sync_audio_play(video_path):
+    # Open the video file with OpenCV's VideoCapture.
+    pygame.init()
+    pygame.mixer.init()
+
+    audio_path = extract_and_convert_audio(video_path)
+    sound = AudioSegment.from_file(audio_path)
+    sound.export("temp.wav", format="wav")
+    pygame.mixer.music.load("temp.wav")
+    pygame.mixer.music.play()
+    pygame.mixer.music.set_speed(0.95)
+
+
  
 if __name__ == "__main__":   
     
-    file_name = "m"
-    video_file = f"./{file_name}.mp4"
+    file_name = "dance"
+    video_file = f"./videos/{file_name}.mp4"
     
     
     
@@ -677,5 +625,6 @@ if __name__ == "__main__":
     additional_options = {"skip_first_frames": 400} if not USE_WEBCAM else {}
     # Just_Dance(None).play_sound(mp3file)
     jd = Just_Dance(None)   
-    jd.run_pose_estimation(source=source, flip=False, use_popup=True, msg_queue=None,**additional_options)
+    jd.run_pose_estimation(source=source, flip=False, use_popup=True, msg_queue=None,**additional_options,index=0,)
+    
     

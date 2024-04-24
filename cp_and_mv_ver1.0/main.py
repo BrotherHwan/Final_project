@@ -8,7 +8,7 @@ import time
 
 
 
-from moviepy.editor import VideoFileClip
+# from moviepy.editor import VideoFileClip
 
 from PyQt5.QtWidgets import *
 from PyQt5 import uic
@@ -91,27 +91,22 @@ class Main():
                     elif value == "start":
                         match self.subject_index:
                             case 0:
-                                
-                                video_clip = VideoFileClip("./m.mp4")
-                                audio_clip = video_clip.audio
-                                audio_clip = video_clip.audio
-                                self.message_que.put(("dance_p","start"))
-                                tp = threading.Thread(target=self.function_one, args=(audio_clip, ))
-                                tp.start()
-                                tp.join()    
-                                
+                                self.message_que.put(("dance","start"))
                                 continue
-                                
                             case 1:
+                                self.message_que.put(("baseball","start"))
                                 continue
                                 
                             case 2:
+                                self.message_que.put(("soccer","start"))
                                 continue
                                 
                             case 3:
+                                self.message_que.put(("basketball","start"))
                                 continue
                                 
                             case 4:
+                                self.message_que.put(("golf","start"))
                                 continue
                     
                 else:
@@ -165,19 +160,27 @@ class Main():
     def Just_Dance(self, queue, lock):
         jd = dance.Just_Dance(queue)
         # 메인ui에서 큐에넣어주면 가져와서 해당 이름을 filename에 설정. queue.get()
-        file_name = "m"
-        video_file = f"./{file_name}.mp4"
-
-        USE_WEBCAM = False
-        cam_id = 0
         
-        source = cam_id if USE_WEBCAM else video_file
+        
         while 1:
             lock.acquire()
             key, value = queue.get()
             lock.release()
-            if key == "dance_p" and value == "start":
-                jd.run_pose_estimation(source=source, flip=False, use_popup=True, msg_queue=queue, skip_first_frames=500)
+            if key == "dance" and value == "start":
+                source = f"./videos/{key}.mp4"
+                jd.run_pose_estimation(source=source, flip=False, use_popup=True, msg_queue=queue, skip_first_frames=500,index=0)
+            elif key == "baseball" and value == "start":
+                source = f"./videos/{key}.mp4"
+                jd.run_pose_estimation(source=source, flip=False, use_popup=True, msg_queue=queue, skip_first_frames=500,index=1)
+            elif key == "soccer" and value == "start":
+                source = f"./videos/{key}.mp4"
+                jd.run_pose_estimation(source=source, flip=False, use_popup=True, msg_queue=queue, skip_first_frames=500,index=2)
+            elif key == "basketball" and value == "start":
+                source = f"./videos/{key}.mp4"
+                jd.run_pose_estimation(source=source, flip=False, use_popup=True, msg_queue=queue, skip_first_frames=500,index=3)
+            elif key == "golf" and value == "start":
+                source = f"./videos/{key}.mp4"
+                jd.run_pose_estimation(source=source, flip=False, use_popup=True, msg_queue=queue, skip_first_frames=500,index=4)
             else:
                 queue.put((key,value))
                 time.sleep(1)
