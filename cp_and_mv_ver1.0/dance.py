@@ -67,7 +67,7 @@ class Model:
 
     """
 
-    def __init__(self, model_path, batchsize=1, device="CPU"):
+    def __init__(self, model_path, batchsize=1, device="GPU"):
 
         """
         Initialize the model object
@@ -118,7 +118,7 @@ class Just_Dance():
         self.model = core.read_model(model_path)
 
         # Let the AUTO device decide where to load the model (you can use CPU, GPU as well).
-        self.compiled_model_p = core.compile_model(model=self.model, device_name="CPU", config={"PERFORMANCE_HINT": "LATENCY"})
+        self.compiled_model_p = core.compile_model(model=self.model, device_name="GPU", config={"PERFORMANCE_HINT": "LATENCY"})
 
         # Get the input and output names of nodes.
         self.input_layer = self.compiled_model_p.input(0)
@@ -399,7 +399,6 @@ class Just_Dance():
         # process1 = multiprocessing.Process(target=sync_audio_video, args=(source,))
         # process1.start()  # Start the process
         
-        
         pafs_output_key = self.compiled_model_p.output("Mconv7_stage2_L1")
         heatmaps_output_key = self.compiled_model_p.output("Mconv7_stage2_L2")
         
@@ -411,8 +410,10 @@ class Just_Dance():
         try:
             # Create a video player to play with target fps.
         
-            player = utils.VideoPlayer(source, size=(900, 500), flip=flip, fps=20)
-            player1 = utils.VideoPlayer(source, size=(900, 500), flip=flip, fps=20)
+            frame_size = (1850, 1050)
+        
+            player = utils.VideoPlayer(source, size=frame_size, flip=flip, fps=24)
+            player1 = utils.VideoPlayer(0, size=frame_size, fps=24)
             # Start capturing.
             if index==0:
                 sync_audio_play(source)
@@ -423,11 +424,9 @@ class Just_Dance():
             if use_popup:
                 title = "Press ESC to Exit windows0"
                 cv2.namedWindow(title, cv2.WINDOW_GUI_NORMAL | cv2.WINDOW_AUTOSIZE)
-                # cv2.moveWindow(title,3000,50)
+                cv2.moveWindow(title, 70, 0)
                 
             # processing_times = collections.deque()
-            
-            
             
             frame_count = 0
             start_time = time.time()
@@ -461,7 +460,7 @@ class Just_Dance():
 
                 input_img = cv2.resize(traking_image, (self.width_p, self.height_p), interpolation=cv2.INTER_AREA)
                 input_img1 = cv2.resize(traking_image1, (self.width_p, self.height_p), interpolation=cv2.INTER_AREA)
-                print("넓이:",self.width_p,"높이:", self.height_p)
+                # print("넓이:",self.width_p,"높이:", self.height_p)
                 input_img = input_img.transpose((2,0,1))[np.newaxis, ...]
                 input_img1 = input_img1.transpose((2,0,1))[np.newaxis, ...]
 
@@ -484,8 +483,8 @@ class Just_Dance():
                 
                 # Draw poses on a frame.
                 
-                traking_image, answer_list,answer_point_list = self.draw_poses(traking_image, poses, 0.6, self.default_skeleton)
-                traking_image1, player_list,player_point_list = self.draw_poses(traking_image1, poses1, 0.6, self.default_skeleton)
+                traking_image, answer_list, answer_point_list = self.draw_poses(traking_image, poses, 0.6, self.default_skeleton)
+                traking_image1, player_list, player_point_list = self.draw_poses(traking_image1, poses1, 0.6, self.default_skeleton)
                 
                 total_angle_score = 0
                 angle_score = 0
@@ -502,20 +501,20 @@ class Just_Dance():
                             angle_score = 0
                         elif angle_dif > 60:
                             #빨강
-                            cv2.circle(traking_image1, player_point_list[i], 4, (0, 0, 255), -1)
+                            cv2.circle(traking_image1, player_point_list[i], 20, (0, 0, 255), -1)
                             angle_score = 40
                         elif angle_dif > 30:
                             #빨강
-                            cv2.circle(traking_image1, player_point_list[i], 4, (0, 0, 255), -1)
+                            cv2.circle(traking_image1, player_point_list[i], 20, (0, 0, 255), -1)
                             angle_score = 80
                         elif angle_dif > 20:
                             #노랑
-                            cv2.circle(traking_image1, player_point_list[i], 4, (0,255,255), -1)
+                            cv2.circle(traking_image1, player_point_list[i], 20, (0,255,255), -1)
                             angle_score = 90
                         elif angle_dif > 10:
                             #녹색
                             angle_score = 95
-                            cv2.circle(traking_image1, player_point_list[i], 4, (0, 255, 0), -1)
+                            cv2.circle(traking_image1, player_point_list[i], 20, (0, 255, 0), -1)
                         else:
                             angle_score = 100
                             
@@ -523,7 +522,6 @@ class Just_Dance():
                 except:
                     pass
 
-             
                 if skip_count == 8:
                     continue
                 
@@ -538,18 +536,31 @@ class Just_Dance():
                 score_list.append(angle_score_avg)
                 
                 send_score = f"Score : {int(mean(score_list))}"
-                cv2.putText(frame1, f"score : {int(angle_score_avg)}", (600, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
+                # cv2.putText(frame, f"score : {int(angle_score_avg)}", (1850-int(1850/4), int(1060/4) +900), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
                 
                 if time.time() - start >= 0.5 : 
                     
                     self.client.publish("CPMV", send_score, qos=0)
                     start = time.time()    
-                 
-            
-            
+                
                 if use_popup:
-                    stacked_array = np.vstack((frame, frame1))
+                    # stacked_array = np.vstack((frame, frame1))
                     
+                    print(frame.shape, frame1.shape)
+                    
+                    frame[:int(1050/4), 1850-int(1850/4):, :] = cv2.resize(frame1, dsize = (int(1850/4), int(1050/4)))
+                    
+                    if angle_score_avg > 70:
+                        color = (0, 255, 0)
+                    elif angle_score_avg <= 70 and angle_score_avg > 40:
+                        color = (0, 255, 255)
+                    else:
+                        color = (0, 0, 255)
+                                        
+                    cv2.putText(frame, f"score : {int(angle_score_avg)}", (1850-int(1850/4)+50, int(1050/4)+50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+                    
+                    stacked_array = frame
+                     
                     cv2.imshow(title, stacked_array)
                     
                     # video_clip.preview()
@@ -564,7 +575,7 @@ class Just_Dance():
                             pygame.mixer.music.stop()
                         cv2.destroyAllWindows()
                         if msg_queue != None:
-                            msg_queue.put(("quit","all"))
+                            msg_queue.put(("quit", "all"))
                         break
        
         finally:
@@ -606,16 +617,12 @@ def sync_audio_play(video_path):
     sound.export("temp.wav", format="wav")
     pygame.mixer.music.load("temp.wav")
     pygame.mixer.music.play()
-    pygame.mixer.music.set_speed(0.95)
-
 
  
 if __name__ == "__main__":   
     
     file_name = "dance"
     video_file = f"./videos/{file_name}.mp4"
-    
-    
     
     USE_WEBCAM = False
     cam_id = 0
@@ -626,5 +633,4 @@ if __name__ == "__main__":
     # Just_Dance(None).play_sound(mp3file)
     jd = Just_Dance(None)   
     jd.run_pose_estimation(source=source, flip=False, use_popup=True, msg_queue=None,**additional_options,index=0,)
-    
     

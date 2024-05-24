@@ -36,11 +36,7 @@ class Main():
         self.pd = None
         
         
-    def function_one(self, audio_clip):
-        
-        time.sleep(1)
-        print("음악부분 실행완료")
-        audio_clip.preview()
+  
      
     def Main_process(self):        
         self.ui_p = multiprocessing.Process(target=self.UI_Load, args=(self.message_que, self.lock, ))

@@ -6,9 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>642</width>
-    <height>600</height>
+    <width>1920</width>
+    <height>1080</height>
    </rect>
+  </property>
+  <property name="contextMenuPolicy">
+   <enum>Qt::DefaultContextMenu</enum>
   </property>
   <property name="windowTitle">
    <string>Form</string>
@@ -19,8 +22,8 @@
    </property>
    <property name="geometry">
     <rect>
-     <x>200</x>
-     <y>250</y>
+     <x>960</x>
+     <y>540</y>
      <width>241</width>
      <height>61</height>
     </rect>
@@ -40,15 +43,15 @@
   <widget class="QLabel" name="txt_title">
    <property name="geometry">
     <rect>
-     <x>120</x>
-     <y>60</y>
-     <width>381</width>
-     <height>51</height>
+     <x>630</x>
+     <y>210</y>
+     <width>660</width>
+     <height>70</height>
     </rect>
    </property>
    <property name="font">
     <font>
-     <pointsize>25</pointsize>
+     <pointsize>30</pointsize>
      <weight>75</weight>
      <bold>true</bold>
     </font>
@@ -57,7 +60,7 @@
     <enum>QFrame::NoFrame</enum>
    </property>
    <property name="text">
-    <string>JUST DANCE Ver 1.0</string>
+    <string>Copy &amp; Move ver2.1</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignCenter</set>
@@ -66,14 +69,14 @@
   <widget class="QLabel" name="txt_menu">
    <property name="geometry">
     <rect>
-     <x>100</x>
-     <y>150</y>
+     <x>750</x>
+     <y>320</y>
      <width>441</width>
-     <height>361</height>
+     <height>251</height>
     </rect>
    </property>
    <property name="text">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:22pt;&quot;&gt;플레이 선택&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;1. 춤&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;2. 야구 (준비중)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;3. 축구 (준비중)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;4. 농구 (준비중)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;5. 골프 (준비중)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;Choose Play Menu&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;1. Dance&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;2. Taekwondo&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;3. FeedBack&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </widget>
   <widget class="QLabel" name="txt_info">
@@ -82,8 +85,8 @@
    </property>
    <property name="geometry">
     <rect>
-     <x>60</x>
-     <y>510</y>
+     <x>710</x>
+     <y>740</y>
      <width>511</width>
      <height>61</height>
     </rect>
@@ -103,10 +106,10 @@
   <widget class="QLabel" name="label">
    <property name="geometry">
     <rect>
-     <x>90</x>
-     <y>260</y>
-     <width>311</width>
-     <height>51</height>
+     <x>740</x>
+     <y>430</y>
+     <width>181</width>
+     <height>41</height>
     </rect>
    </property>
    <property name="text">
