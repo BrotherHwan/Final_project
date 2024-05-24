@@ -411,8 +411,8 @@ class Just_Dance():
         try:
             # Create a video player to play with target fps.
         
-            player = utils.VideoPlayer(source, size=(900, 500), flip=flip, fps=20)
-            player1 = utils.VideoPlayer(source, size=(900, 500), flip=flip, fps=20)
+            player = utils.VideoPlayer(source, size=(900, 500), flip=flip, fps=24)
+            player1 = utils.VideoPlayer(source, size=(900, 500), flip=flip, fps=24)
             # Start capturing.
             if index==0:
                 sync_audio_play(source)
@@ -606,8 +606,6 @@ def sync_audio_play(video_path):
     sound.export("temp.wav", format="wav")
     pygame.mixer.music.load("temp.wav")
     pygame.mixer.music.play()
-    pygame.mixer.music.set_speed(0.95)
-
 
  
 if __name__ == "__main__":   
