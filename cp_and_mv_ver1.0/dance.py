@@ -26,7 +26,7 @@ from decoder import OpenPoseDecoder
 import paho.mqtt.client as mqtt
 
 from statistics import mean
-import utils.notebook_utils as utils
+import utils_folder.notebook_utils as utils
 from deepsort_utils.tracker import Tracker
 from deepsort_utils.nn_matching import NearestNeighborDistanceMetric
 from deepsort_utils.detection import Detection, compute_color_for_labels, xywh_to_xyxy, xywh_to_tlwh, tlwh_to_xyxy

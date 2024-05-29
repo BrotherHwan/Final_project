@@ -8,7 +8,8 @@ class sound_reco():
     def __init__(self):
         self.confirm = ["선택", '실행', '확인', '시작']
         # Initialize whisper
-        self.model = whisper.load_model("small")  # tiny/base/small/medium/large
+        self.model = whisper.load_model("small", device="cpu")  # tiny/base/small/medium/large
+        print(self.model.device)
         # model = whisper.load_model("base", "cpu") # tiny/base/small/medium/large
         # Initialize recognizer class (for recognizing the speech)
         self.recognizer = sr.Recognizer()
@@ -21,20 +22,29 @@ class sound_reco():
             self.recognizer.adjust_for_ambient_noise(source, duration=1)
             # print("Microphone is now listening for input up to 10 seconds")
             print("음성 명령을 내려주세요(댄스, 야구, 농구, 축구, 골프 중 하나를 골라서 이야기해주세요)")
+            print("1")
             audio = self.recognizer.listen(source, phrase_time_limit=3)
+            print("2")
             # Write audio to a WAV file
             with open("rec_input.wav", "wb") as f:
                 f.write(audio.get_wav_data())
+            print("3")
 
         # load audio and pad/trim it to fit 30 seconds
         audio = whisper.load_audio("rec_input.wav")
+        print("4")
         audio = whisper.pad_or_trim(audio)
+        print("5")
         # make log-Mel spectrogram and move to the same device as the model
         mel = whisper.log_mel_spectrogram(audio).to(self.model.device)
+        print("6")
 
         # decode the audio
         options = whisper.DecodingOptions(language='ko')
         result = whisper.decode(self.model, mel, options)
+        
+        print("7")
+        print(result)
 
         # print the recognized text
         

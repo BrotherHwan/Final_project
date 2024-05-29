@@ -70,9 +70,9 @@ class Main_UI(QWidget, main_window):
             pass
     
     def sub_move(self, idx):
-        self.label.move(90, self.pos[idx])
+        self.label.move(200, self.pos[idx])
 
-    def keyPressEvent(self, e):
+    def keyPressEvent(self, e):        
         if e.key() == Qt.Key_Up:
             self.pos_idx = self.pos_idx - 1
             if self.pos_idx < 0:
@@ -82,6 +82,9 @@ class Main_UI(QWidget, main_window):
             self.pos_idx = self.pos_idx + 1
             if self.pos_idx > len(self.pos)-1:
                 self.pos_idx = 0
+                
+        elif e.key() == Qt.Key_Escape:
+            self.close()
 
         self.label.move(90, self.pos[self.pos_idx])
 
@@ -112,7 +115,6 @@ if __name__ == '__main__':
     def sig_hadler(signal, frame):
         sys.exit()
     
-    
     app = QApplication(sys.argv)
     mainWindow = Main_UI(None)
     mainWindow.show()
@@ -120,6 +122,5 @@ if __name__ == '__main__':
     
     signal.signal(signal.SIGINT, sig_hadler)
 
-    
     # UI_Start()
     
