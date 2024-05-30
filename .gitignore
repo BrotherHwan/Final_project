@@ -1,3 +1,8 @@
-./__pycache__
+cp_and_mv*/__pycache__
 
 pose_env/
+
+cp_and_mv*/models/
+cp_and_mv*/hand_control.py
+cp_and_mv*/parameters.json
+cp_and_mv*/openvino_utils/
