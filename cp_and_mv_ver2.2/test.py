@@ -273,6 +273,9 @@ def run(hand_tracker, model, cv2_util):
 
         # print recognized gesture
         if time.time() - state["prev_action"][1] < time_threshold * 2:
+            
+            print(state["prev_action"][0])
+            
             cv2.putText(
                 annotated_frame,
                 state["prev_action"][0],

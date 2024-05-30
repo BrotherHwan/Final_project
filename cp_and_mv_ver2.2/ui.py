@@ -21,7 +21,7 @@ class Main_UI(QWidget, main_window):
         super().__init__()
         self.setupUi(self)
         
-        self.pos = [260, 310, 360, 410, 457]
+        self.pos = [430, 470, 510]
         self.pos_idx = 0
         
         self.txt_title.setHidden(True)
@@ -70,7 +70,7 @@ class Main_UI(QWidget, main_window):
             pass
     
     def sub_move(self, idx):
-        self.label.move(200, self.pos[idx])
+        self.label.move(740, self.pos[idx])
 
     def keyPressEvent(self, e):        
         if e.key() == Qt.Key_Up:

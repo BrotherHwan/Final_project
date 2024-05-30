@@ -14,7 +14,7 @@ class HandRegion:
 
     def print(self):
         attrs = vars(self)
-        print("\n".join("%s: %s" % item for item in attrs.items()))
+        # print("\n".join("%s: %s" % item for item in attrs.items()))
 
 
 SSDAnchorOptions = namedtuple(

@@ -12,7 +12,6 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 
 import dance
-import sound
 import ui
 import hand_control
 
@@ -34,11 +33,12 @@ class Main():
         
         ui_proc.start()
         hand_proc.start()
+        dance_proc.start()
         
-        ui_pid = ui_pid.pid
+        ui_pid = ui_proc.pid
         
         # if something:  # 특정 커멘드 일때 dance proc 실행
-        #     dance_proc.start()
+        #     
         
         ui_proc.join()
         hand_proc.join()
@@ -48,47 +48,72 @@ class Main():
     def UI_Process(self, queue, lock):
         app = QApplication(sys.argv)
         self.mainWindow = ui.Main_UI(queue)
-        
-        q_thd = threading.Thread(target=self.que_thread, args=(queue, lock, ))
+        temp_idx = 0
+        q_thd = threading.Thread(target=self.que_thread, args=(queue, lock, temp_idx, ))
         q_thd.start()
         
         self.mainWindow.show()
         
         app.exec_()
         
-    def que_thread(self, queue, lock):
-        
-        temp_idx = 0
+    def que_thread(self, queue, lock, temp_idx):
         while True:
             if queue.empty():
                 time.sleep(0.1)
             else:
                 lock.acquire()
                 target, value = queue.get()
-                lock.release()
+                
+                current = ""
+                
                 if target == 'gesture':
-                    print(f"in ui : {value}")
+                    print(f"in ui : {value}, {temp_idx}")
 
-                    if value == 1:
-                        temp_idx -= 1
-                        if temp_idx < 0:
-                            temp_idx = 3
-                    elif value == 2:
-                        temp_idx += 1
-                        if temp_idx > 3:
-                            temp_idx = 0
-                    elif value == 3:
+                    if value == "left":                           
+                        if current != "left":
+                            current = value
+                            
+                            temp_idx -= 1
+                            
+                            if temp_idx < 0:
+                                temp_idx = 2 
+                    elif value == "right":
+                        if current != "right":
+                            current = value
+                            temp_idx += 1
+                            
+                            if temp_idx > 2:
+                                temp_idx = 0
+                    elif value == "shortcut1":
+                        self.mainWindow.sub_move(0)
+                        temp_idx = 0
+                    elif value == "shortcut2":
+                        self.mainWindow.sub_move(1)
+                        temp_idx = 1
+                    elif value == "select":
+                        time.sleep(0.5)
                         print(self.subject_list[temp_idx])
+
                         queue.put((self.subject_list[temp_idx], "start"))
-                    
-                    
+                        
                     self.mainWindow.sub_move(int(temp_idx))
                     
-                    time.sleep(0.2)
-                
+                    time.sleep(1)
+                    
+                elif target == "dance_score":
+                    self.mainWindow.score_write(str(value))
+                    time.sleep(1)
+                    self.mainWindow.ui_reload()
+                    
+                    queue.put(("control", "on"))      
                 else:
+
                     queue.put((target, value))
-                    time.sleep(1)    
+
+                    time.sleep(1)
+                    
+                lock.release()
+                  
     
     def Hand_Process(self, queue, lock):
         
@@ -106,11 +131,12 @@ class Main():
             print(f"in dance proc : {target}, {cmd}")
             lock.release()
             
-            if cmd == "start":
-                vid_source = f"./videos/{target}.mp4"
-            
-                jd.run_pose_estimation(source=vid_source, flip=False, use_popup=True,
-                                       msg_queue=queue, skip_first_frames=500, index=0)
+            if target in self.subject_list:
+                if cmd == "start":
+                    vid_source = f"./videos/{target}.mp4"
+                
+                    jd.run_pose_estimation(source=vid_source, flip=False, use_popup=True,
+                                        msg_queue=queue, skip_first_frames=500, index=0)
             
             else:
                 queue.put((target, cmd))

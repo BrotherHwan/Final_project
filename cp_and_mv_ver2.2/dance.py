@@ -412,8 +412,8 @@ class Just_Dance():
         
             frame_size = (1850, 1050)
         
-            player = utils.VideoPlayer(source, size=frame_size, flip=flip, fps=24)
-            player1 = utils.VideoPlayer(0, size=frame_size, fps=24)
+            player = utils.VideoPlayer(source, size=frame_size, flip=flip, fps=-1)
+            player1 = utils.VideoPlayer(0, size=frame_size, fps=-1)
             # Start capturing.
             if index==0:
                 sync_audio_play(source)
@@ -546,10 +546,15 @@ class Just_Dance():
                 if use_popup:
                     # stacked_array = np.vstack((frame, frame1))
                     
-                    print(frame.shape, frame1.shape)
+                    # print(frame.shape, frame1.shape)
                     
-                    frame[:int(1050/4), 1850-int(1850/4):, :] = cv2.resize(frame1, dsize = (int(1850/4), int(1050/4)))
+                    # frame[:int(1050/4), 1850-int(1850/4):, :] = cv2.resize(frame1, dsize = (int(1850/4), int(1050/4)))
                     
+                    target_frame = frame.copy()
+                    player_frame = frame1.copy()
+                    
+                    target_frame[:int(1050/4), 1850-int(1850/4):, :] = cv2.resize(player_frame, dsize = (int(1850/4), int(1050/4)))
+                
                     if angle_score_avg > 70:
                         color = (0, 255, 0)
                     elif angle_score_avg <= 70 and angle_score_avg > 40:
@@ -557,11 +562,17 @@ class Just_Dance():
                     else:
                         color = (0, 0, 255)
                                         
-                    cv2.putText(frame, f"score : {int(angle_score_avg)}", (1850-int(1850/4)+50, int(1050/4)+50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+                    cv2.putText(target_frame, f"score : {int(angle_score_avg)}", (1850-int(1850/4)+50, int(1050/4)+50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
                     
-                    stacked_array = frame
+                    # stacked_array = frame
                      
-                    cv2.imshow(title, stacked_array)
+                    # cv2.imshow(title, stacked_array)
+                    
+                    cv2.imshow(title, target_frame)
+                    
+                    frame1[:int(1050/4), 1850-int(1850/4):, :] = cv2.resize(frame, dsize = (int(1850/4), int(1050/4)))
+                    
+                    cv2.imshow("replay", frame1)
                     
                     # video_clip.preview()
                     key = cv2.waitKey(1)                
@@ -580,7 +591,7 @@ class Just_Dance():
        
         finally:
        
-            if player is not None:
+            if player is not None and player1 is not None:
                 # Stop capturing.
                 
                 player.stop()
@@ -588,7 +599,8 @@ class Just_Dance():
                 if index==0:
                     pygame.mixer.music.stop()
                 
-        
+            score = 0
+
             if len(score_list) != 0:                
                 score = sum(score_list)/(len(score_list)+0.0001)
                 print(f"final score : {int(score)}")
