@@ -6,8 +6,8 @@ from openvino_utils.fps import FPS
 
 class CV2Utils:
     def __init__(self):
-        self.w = 490 #1280
-        self.h = 260 #720
+        self.w = 640 #1280
+        self.h = 360 #720
         
         self.make_cam()
         
@@ -17,6 +17,8 @@ class CV2Utils:
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.h)
 
         self.fps = FPS(mean_nb_frames=20)
+        
+        return self.cap
 
     def read(self):
         return self.cap.read()

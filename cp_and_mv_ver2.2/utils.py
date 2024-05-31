@@ -97,11 +97,17 @@ def normalize_points(points):
     return normalized_points, scale
 
 
-def perform_action(action, infinite=False):
+def perform_action(action, q, infinite=False):
     if action == "right":
         command = "adb shell input keyevent KEYCODE_DPAD_RIGHT"
         subprocess.run(command, shell=True, check=False)
         print("right")
+        print("gonna write in queue")
+        if q is not None:
+            q.put(("gesture", "right"))
+        else: 
+            pass
+        print("next queue")
         if infinite:
             play_audio_file("Swipe1")
         else:
@@ -111,6 +117,10 @@ def perform_action(action, infinite=False):
         command = "adb shell input keyevent KEYCODE_DPAD_LEFT"
         subprocess.run(command, shell=True, check=False)
         print("left")
+        if q is not None:
+            q.put(("gesture", "left"))
+        else: 
+            pass
         if infinite:
             play_audio_file("Swipe2")
         else:
@@ -120,24 +130,40 @@ def perform_action(action, infinite=False):
         command = "adb shell input keyevent KEYCODE_BUTTON_SELECT"
         subprocess.run(command, shell=True, check=False)
         print("select")
+        if q is not None:
+            q.put(("gesture", "select"))
+        else: 
+            pass
         play_audio_file("Select")
         return ["select", time.time()]
     elif action == "exit":
         command = "adb shell input keyevent KEYCODE_BACK"
         subprocess.run(command, shell=True, check=False)
         print("exit")
+        if q is not None:
+            q.put(("gesture", "exit"))
+        else: 
+            pass
         play_audio_file("Exit")
         return ["exit", time.time()]
     elif action == "shortcut1":
         command = "adb shell input keyevent SHORTCUT1"
         subprocess.run(command, shell=True, check=False)
         print("shortcut 1")
+        if q is not None:
+            q.put(("gesture", "shortcut1"))
+        else: 
+            pass
         play_audio_file("First")
         return ["shortcut1", time.time()]
     elif action == "shortcut2":
         command = "adb shell input keyevent SHORTCUT2"
         subprocess.run(command, shell=True, check=False)
         print("shortcut 2")
+        if q is not None:
+            q.put(("gesture", "shortcut2"))
+        else: 
+            pass
         play_audio_file("Second")
         return ["shortcut2", time.time()]
     elif action == "custom":

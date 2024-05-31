@@ -142,8 +142,7 @@ class Just_Dance():
 
         self.default_skeleton = ((15, 13), (13, 11), (16, 14), (14, 12), (11, 12), (5, 11), (6, 12), (5, 6), (5, 7),
                                     (6, 8), (7, 9), (8, 10), (1, 2), (0, 1), (0, 2), (1, 3), (2, 4), (3, 5), (4, 6))
-
-        
+                
     
     # 2D pooling in numpy (from: https://stackoverflow.com/a/54966908/1624463)
     def pool2d(self, A, kernel_size, stride, padding, pool_mode="max"):
@@ -352,7 +351,6 @@ class Just_Dance():
             angle_l_elbow_point = (points[7][0],points[7][1])
             #cv2.putText(img, f"{angle_l_elbow}", (points[7][0]+10, points[7][1]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100,255,0), 1)
             
-            
             angle_r_elbow = self.calculate_angle(points[6][0], points[6][1], points[8][0], points[8][1], points[10][0], points[10][1])
             angle_r_elbow_point = (points[8][0],points[8][1])
             #cv2.putText(img, f"{angle_r_elbow}", (points[8][0]+10, points[8][1]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100,255,0), 1)
@@ -393,7 +391,7 @@ class Just_Dance():
         return img, angle_list, angle_point_list
 
     # Main processing function to run pose estimation.
-    def run_pose_estimation(self, source=0, flip=False, use_popup=False, msg_queue=None, skip_first_frames=0,index=0):
+    def run_pose_estimation(self, source=0, flip=False, fps=None, use_popup=False, msg_queue=None, skip_first_frames=0, index=0):
         
         
         # process1 = multiprocessing.Process(target=sync_audio_video, args=(source,))
@@ -404,16 +402,28 @@ class Just_Dance():
         
         player = None
         player1 = None
-        score_list=[]
+        score_list = []
         
+        score_avg_lst = []
+        wrong_frame = []
+        
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        
+        writer = cv2.VideoWriter(f"./feedback_video/feedback_{os.path.basename(source).split('.')[0]}.mp4", fourcc, 24, (1850, 1050))
+        
+        print(f"writer : {writer.isOpened()}")
+        
+        point = 60  # target score
+        windowsize = 10  # window score size for target
         
         try:
             # Create a video player to play with target fps.
         
             frame_size = (1850, 1050)
         
-            player = utils.VideoPlayer(source, size=frame_size, flip=flip, fps=-1)
-            player1 = utils.VideoPlayer(0, size=frame_size, fps=-1)
+            player = utils.VideoPlayer(source, size=frame_size, fps=30)
+            # player1 = utils.VideoPlayer(source, size=frame_size)
+            player1 = utils.VideoPlayer(0, size=frame_size, fps=30, flip=True)
             # Start capturing.
             if index==0:
                 sync_audio_play(source)
@@ -432,6 +442,10 @@ class Just_Dance():
             start_time = time.time()
             start= time.time()
 
+            fall = False
+            
+            circle_size = 14
+
             while True:
                 
                 frame = player.next()
@@ -446,14 +460,14 @@ class Just_Dance():
                     print("Source ended")
                     break
     
-                elapsed_time = time.time() - start_time
-                if elapsed_time >= 1.0:  # 1초마다 FPS 계산
-                    fps = frame_count / elapsed_time
-                    print(f"FPS: {fps:.2f}")
+                # elapsed_time = time.time() - start_time
+                # if elapsed_time >= 1.0:  # 1초마다 FPS 계산
+                #     fps = frame_count / elapsed_time
+                #     print(f"FPS: {fps:.2f}")
 
-                    # FPS 계산을 위한 변수 재설정
-                    frame_count = 0
-                    start_time = time.time()
+                #     # FPS 계산을 위한 변수 재설정
+                #     frame_count = 0
+                #     start_time = time.time()
         
                 traking_image = frame
                 traking_image1 = frame1
@@ -497,28 +511,30 @@ class Just_Dance():
                         
                         angle_dif = abs(answer_list[i] - player_list[i])
                         
+                        if i <= 3:
+                            weight = 1.5
+                        else:
+                            weight = 0.7
+                        
                         if angle_dif > 90:
                             angle_score = 0
-                        elif angle_dif > 60:
+                        elif angle_dif > 15:
                             #빨강
-                            cv2.circle(traking_image1, player_point_list[i], 20, (0, 0, 255), -1)
-                            angle_score = 40
-                        elif angle_dif > 30:
-                            #빨강
-                            cv2.circle(traking_image1, player_point_list[i], 20, (0, 0, 255), -1)
-                            angle_score = 80
-                        elif angle_dif > 20:
-                            #노랑
-                            cv2.circle(traking_image1, player_point_list[i], 20, (0,255,255), -1)
-                            angle_score = 90
+                            cv2.circle(traking_image1, player_point_list[i], circle_size, (0, 0, 255), -1)
+                            angle_score = 20
                         elif angle_dif > 10:
+                            #노랑
+                            cv2.circle(traking_image1, player_point_list[i], circle_size, (0,255,255), -1)
+                            angle_score = 80
+                        elif angle_dif > 5:
                             #녹색
-                            angle_score = 95
-                            cv2.circle(traking_image1, player_point_list[i], 20, (0, 255, 0), -1)
+                            angle_score = 90
+                            cv2.circle(traking_image1, player_point_list[i], circle_size, (0, 255, 0), -1)
                         else:
                             angle_score = 100
                             
-                        total_angle_score += angle_score
+                        total_angle_score += (angle_score * weight)
+                                                
                 except:
                     pass
 
@@ -531,13 +547,33 @@ class Just_Dance():
                     angle_score_avg = total_angle_score / denominator
                 else:
                     # 분모가 0이 되는 경우 처리
-                    angle_score_avg = None  # 또는 다른 적절한 처리
+                    angle_score_avg = 0  # 또는 다른 적절한 처리
+                    
+                angle_score_avg = int(angle_score_avg * 100 / 110)
                 
                 score_list.append(angle_score_avg)
                 
                 send_score = f"Score : {int(mean(score_list))}"
                 # cv2.putText(frame, f"score : {int(angle_score_avg)}", (1850-int(1850/4), int(1060/4) +900), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
                 
+                if len(score_avg_lst) < 30:
+                    score_avg_lst.append(angle_score_avg)
+                else:
+                    score_avg_lst.pop(0)
+                    score_avg_lst.append(angle_score_avg)
+                    # print(f"avg score list len : {len(score_avg_lst)}")
+                    
+                # if mean(score_avg_lst) < 50:
+                #     wrong_frame.append(frame_count)
+                
+                if (mean(score_avg_lst) < point - (windowsize / 2)) and not fall:
+                    fall = True
+                    wrong_frame.append(frame_count)                    
+                
+                if (mean(score_avg_lst) > point + (windowsize / 2)) and fall:
+                    fall = False
+                    wrong_frame.append(frame_count)
+                    
                 if time.time() - start >= 0.5 : 
                     
                     self.client.publish("CPMV", send_score, qos=0)
@@ -562,7 +598,7 @@ class Just_Dance():
                     else:
                         color = (0, 0, 255)
                                         
-                    cv2.putText(target_frame, f"score : {int(angle_score_avg)}", (1850-int(1850/4)+50, int(1050/4)+50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+                    cv2.putText(target_frame, f"score : {int(angle_score_avg)}", (1850-int(1850/4)+70, int(1050/4)+50), cv2.FONT_HERSHEY_SIMPLEX, 2, color, 3)
                     
                     # stacked_array = frame
                      
@@ -572,13 +608,15 @@ class Just_Dance():
                     
                     frame1[:int(1050/4), 1850-int(1850/4):, :] = cv2.resize(frame, dsize = (int(1850/4), int(1050/4)))
                     
-                    cv2.imshow("replay", frame1)
+                    # cv2.imshow("replay", frame1)
+                    
+                    writer.write(frame1)
                     
                     # video_clip.preview()
                     key = cv2.waitKey(1)                
                     
                     # escape = 27
-                    if(cv2.getWindowProperty(title, cv2.WND_PROP_VISIBLE ) <1) or (key == 27):
+                    if(cv2.getWindowProperty(title, cv2.WND_PROP_VISIBLE) <1) or (key == 27):
                         print("Window Closed")
                         player.stop()
                         player1.stop()
@@ -586,11 +624,31 @@ class Just_Dance():
                             pygame.mixer.music.stop()
                         cv2.destroyAllWindows()
                         if msg_queue != None:
-                            msg_queue.put(("quit", "all"))
+                            # msg_queue.put(("quit", "all"))
+                            msg_queue.put(("dance_score", angle_score_avg))
+                            time.sleep(1)
+                            
+                        if len(wrong_frame) % 2 != 0:
+                            wrong_frame.append(frame_count)
+                        
+                        # print(f"wrong frame length: {len(wrong_frame)}")
+                        
+                        # for i in wrong_frame:
+                        #     print(f"wrong frame : {i}")
+                        
+                        self.feedback_maker(f"./feedback_video/feedback_{os.path.basename(source).split('.')[0]}.mp4", wrong_frame)
+                        
                         break
-       
         finally:
-       
+            if len(wrong_frame) % 2 != 0:
+                wrong_frame.append(frame_count)
+            
+            # print(f"wrong frame length : {len(wrong_frame)}")
+            
+            # for i in wrong_frame:
+            #     print(f"wrong frame : {i}")
+                                            
+            writer.release()
             if player is not None and player1 is not None:
                 # Stop capturing.
                 
@@ -605,13 +663,32 @@ class Just_Dance():
                 score = sum(score_list)/(len(score_list)+0.0001)
                 print(f"final score : {int(score)}")
                 
-                
             if use_popup:
                 cv2.destroyAllWindows()
                 
             if msg_queue != None:
                 msg_queue.put(("dance_score", int(score)))
             # process1.join()
+            
+            self.feedback_maker(f"./feedback_video/feedback_{os.path.basename(source).split('.')[0]}.mp4", wrong_frame)
+            
+    def feedback_maker(self, source, frame_list):
+        for i in range(0, len(frame_list), 2):
+            
+            if frame_list[i+1] - frame_list[i] > 45: 
+                out_file = f"./feedback_video/{os.path.basename(source).split('.')[0]}_{time.strftime('%Y-%m-%d')}_{i}.mp4"
+                self.create_video_clip(source, frame_list[i] / 30, frame_list[i+1] / 30, out_file)        
+            
+    def create_video_clip(self, input_file, start_time, end_time, output_file):
+        from moviepy.editor import VideoFileClip
+        try:
+            video = VideoFileClip(input_file)
+            video_clip = video.subclip(start_time, end_time)
+            video_clip.write_videofile(output_file, codec="libx264", audio_codec="aac")
+
+            print(f"클립이 성공적으로 저장되었습니다: {output_file}")
+        except Exception as e:
+            print(f"오류가 발생했습니다: {e}")
                 
      
 def extract_and_convert_audio(video_path, audio_format="mp3"):
@@ -633,7 +710,7 @@ def sync_audio_play(video_path):
  
 if __name__ == "__main__":   
     
-    file_name = "dance"
+    file_name = "taekwondo"  # "dance"
     video_file = f"./videos/{file_name}.mp4"
     
     USE_WEBCAM = False
@@ -644,5 +721,5 @@ if __name__ == "__main__":
     additional_options = {"skip_first_frames": 400} if not USE_WEBCAM else {}
     # Just_Dance(None).play_sound(mp3file)
     jd = Just_Dance(None)   
-    jd.run_pose_estimation(source=source, flip=False, use_popup=True, msg_queue=None,**additional_options,index=0,)
+    jd.run_pose_estimation(source=source, flip=False, use_popup=True, msg_queue=None, **additional_options,index=0,)
     

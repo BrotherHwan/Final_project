@@ -20,11 +20,14 @@ class Main():
     def __init__(self):
         self.msg_que = multiprocessing.Queue()
         self.lock = multiprocessing.Lock()
-        self.subject_list = ["dance", "teakwondo", "feedback"]
+        self.subject_list = ["dance", "taekwondo", "feedback"]
         self.subject_idx = 0
-        self.msg_que.put((None, None))
+        
     
     def Main_Process(self):
+        self.msg_que.put(("start", None))
+        time.sleep(1)
+        
         global ui_pid
         
         ui_proc = multiprocessing.Process(target=self.UI_Process, args=(self.msg_que, self.lock, ))
@@ -47,7 +50,7 @@ class Main():
     
     def UI_Process(self, queue, lock):
         app = QApplication(sys.argv)
-        self.mainWindow = ui.Main_UI(queue)
+        self.mainWindow = ui.Main_UI(queue, lock)
         temp_idx = 0
         q_thd = threading.Thread(target=self.que_thread, args=(queue, lock, temp_idx, ))
         q_thd.start()
@@ -57,73 +60,94 @@ class Main():
         app.exec_()
         
     def que_thread(self, queue, lock, temp_idx):
+        current = ""
+        
+        l_flag = False
+        r_flag = False
+        
         while True:
-            if queue.empty():
-                time.sleep(0.1)
-            else:
-                lock.acquire()
-                target, value = queue.get()
-                
-                current = ""
-                
-                if target == 'gesture':
-                    print(f"in ui : {value}, {temp_idx}")
-
-                    if value == "left":                           
-                        if current != "left":
-                            current = value
-                            
-                            temp_idx -= 1
-                            
-                            if temp_idx < 0:
-                                temp_idx = 2 
-                                
-                    elif value == "right":
-                        if current != "right":
-                            current = value
-                            temp_idx += 1
-                            
-                            if temp_idx > 2:
-                                temp_idx = 0
-                                
-                    elif value == "shortcut1":
-                        self.mainWindow.sub_move(0)
+            lock.acquire()
+            target, value = queue.get()
+            lock.release()
+            print(f"in ui : {target}, {value}, {temp_idx}")
+            if target == 'gesture':
+                if value == "left":                           
+                    temp_idx += 1
+                    
+                    if temp_idx > 2:
                         temp_idx = 0
-                        
-                    elif value == "shortcut2":
-                        self.mainWindow.sub_move(1)
-                        temp_idx = 1
-                        
-                    elif value == "select":
-                        time.sleep(0.5)
-                        print(self.subject_list[temp_idx])
-
+                            
+                elif value == "right":
+                    temp_idx -= 1
+                    
+                    if temp_idx < 0:
+                        temp_idx = 2 
+                            
+                elif value == "shortcut1":
+                    self.mainWindow.sub_move(0)
+                    temp_idx = 0
+                    
+                elif value == "shortcut2":
+                    self.mainWindow.sub_move(1)
+                    temp_idx = 1
+                    
+                elif value == "select":
+                    time.sleep(0.5)
+                    print(self.subject_list[temp_idx])
+                    if self.subject_list[temp_idx] != "feedback":
                         queue.put((self.subject_list[temp_idx], "start"))
-                        
-                    self.mainWindow.sub_move(int(temp_idx))
-                    
-                    time.sleep(1)
-                    
-                elif target == "dance_score":
-                    self.mainWindow.score_write(str(value))
-                    time.sleep(1)
-                    self.mainWindow.ui_reload()
-                    
-                    queue.put(("control", "on"))      
-                else:
-
-                    queue.put((target, value))
-
-                    time.sleep(1)
-                    
-                lock.release()
-                  
+                        time.sleep(1)
+                    else:
+                        self.mainWindow.feedback_on()
+                elif value == "exit":
+                    queue.put(("proc", "end"))
+                    break               
+                self.mainWindow.sub_move(int(temp_idx))
+                
+                time.sleep(1)
+                
+            elif target == "dance_score":
+                self.mainWindow.score_write(str(value))
+                time.sleep(1)
+                self.mainWindow.ui_reload()
+                
+                queue.put(("control", "on")) 
+                time.sleep(1)   
+                 
+            elif target is not None and value is not None:
+                queue.put((target, value))
+                time.sleep(1)
+            
+            elif target is None:
+                queue.put(("start", None))
+                time.sleep(1)                
     
     def Hand_Process(self, queue, lock):
         
-        print(queue.empty())
+        # print(f"in hand proc queue : {queue.empty()}")
+        
+        # hand_controller = hand_control.Hand_Control(queue, lock)
         
         hand_controller = hand_control.Hand_Control(queue, lock)
+        
+        while True:
+            lock.acquire()
+            target, cmd = queue.get()
+            print(f"in hand proc : {target}, {cmd}")
+            lock.release()
+            
+            if target == "start":
+                hand_controller.run_predic(None, queue)
+            elif target == "control":
+                cam = hand_controller.make_cam()
+                hand_controller.run_predic(cam, queue)
+            elif target == "proc" and cmd == "end":
+                queue.put((target, cmd))
+                time.sleep(1)
+                break
+            else:
+                queue.put((target, cmd))
+                time.sleep(1)
         
     
     def Dance_Process(self, queue, lock):
@@ -141,7 +165,9 @@ class Main():
                 
                     jd.run_pose_estimation(source=vid_source, flip=False, use_popup=True,
                                         msg_queue=queue, skip_first_frames=500, index=0)
-            
+            elif target == "proc":
+                queue.put((target, cmd))
+                break
             else:
                 queue.put((target, cmd))
                 time.sleep(1)
