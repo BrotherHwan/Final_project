@@ -1,4 +1,4 @@
-CP & MV ver 0.2.1
+# CP & MV ver 0.2.1
 
 Pose Estimation을 이용하여 자신의 자세와 원하는 동작을 분석  
 각 관절의 유사도를 점수화 하여 표시  
